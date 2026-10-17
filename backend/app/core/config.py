@@ -42,7 +42,9 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
+        configured = [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
+        required = ["http://localhost:5173", "https://tabular-workbench.vercel.app"]
+        return list(dict.fromkeys([*required, *(origin for origin in configured if origin != "*")]))
 
     @property
     def artifact_root(self) -> Path:
