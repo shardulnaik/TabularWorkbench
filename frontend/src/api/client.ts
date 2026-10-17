@@ -1,7 +1,10 @@
 import type { ApiErrorShape } from '../types/common';
 
-const API_ORIGIN = import.meta.env.VITE_API_URL
-  || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : 'https://tabularworkbench.onrender.com');
+const API_ORIGIN = import.meta.env.VITE_API_URL?.trim();
+
+if (!API_ORIGIN) {
+  throw new Error('VITE_API_URL is not configured. Set it to the backend origin before starting the frontend.');
+}
 
 export const API_BASE_URL = `${API_ORIGIN.replace(/\/+$/, '')}/api/v1`;
 
