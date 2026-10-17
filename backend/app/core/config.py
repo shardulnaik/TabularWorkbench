@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_name: str = "Tabular Workbench"
     database_url: str
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:5173,https://tabular-workbench.vercel.app"
     max_upload_mb: int = 20
     session_ttl_hours: int = 6
     log_level: str = "INFO"
