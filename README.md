@@ -18,7 +18,7 @@ The initial ML release supports classification. Regression, persisted project hi
 
 - Frontend: React, TypeScript, Vite, React Router, Recharts
 - Backend: FastAPI, Pydantic Settings, Pandas, NumPy
-- Database: MySQL via SQLAlchemy and PyMySQL; SQLite is used only by automated tests
+- Database: SQLAlchemy with MySQL/PyMySQL for local development and PostgreSQL/psycopg for production; SQLite is used only by automated tests
 - ML: Scikit-learn Pipelines, ColumnTransformer, cross-validation, and held-out evaluation
 - Testing: pytest, Vitest, Testing Library
 - Packaging and hosting: Docker, Render, Vercel
@@ -45,6 +45,8 @@ if (-not (Test-Path backend\.env)) { Copy-Item backend\.env.example backend\.env
 
 Edit `backend/.env`. Set a database URL for your local MySQL server and keep the password out of source control. URL-encode special characters in the password when necessary. Do not commit `.env` files.
 
+The backend reads its database exclusively from `DATABASE_URL`. For local development, use the MySQL URL documented in `backend/.env.example`. The same setting accepts Render's Neon PostgreSQL URL; bare `postgresql://` and `postgres://` URLs are normalized to psycopg3.
+
 ### 2. Frontend dependencies
 
 ```powershell
@@ -57,6 +59,22 @@ cd ..
 `frontend/.env.local` should contain `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1` for local development.
 
 ### 3. Start the backend
+
+Apply the schema before the first start against a new database:
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+If an existing local MySQL database already has the tables created by an earlier app version, and its schema matches the initial migration, mark that schema as migrated once instead:
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m alembic stamp head
+```
+
+Do not use `stamp` on an empty database. For a fresh Neon database, run `alembic upgrade head` with Render's `DATABASE_URL` before starting the service.
 
 ```powershell
 cd backend
@@ -132,7 +150,7 @@ Run `pip check` and `npm list --depth=0` as dependency sanity checks. A green de
 - Push the repository to GitHub.
 - Create a Render Web Service using the `backend/` root directory and Docker environment.
 - Configure `DATABASE_URL`, `CORS_ORIGINS`, `ARTIFACT_STORAGE_DIR`, `MAX_UPLOAD_MB`, and `SESSION_TTL_HOURS` as Render environment variables.
-- Provide MySQL using a managed/private MySQL service or a separately provisioned persistent deployment. The local Workbench database does not become internet-accessible just because the API is deployed.
+- Set `DATABASE_URL` to the connection string provided by Neon PostgreSQL. Run `python -m alembic upgrade head` against that URL before the first deployment; do not configure Neon credentials in source files.
 - Configure persistent storage for `ARTIFACT_STORAGE_DIR` if artifacts must survive restart/redeploy.
 - Set `CORS_ORIGINS` to your deployed Vercel origin, without a trailing slash.
 

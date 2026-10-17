@@ -11,11 +11,13 @@ flowchart TD
     API --> EDA[Statistics and chart calculations]
     API --> ML[Scikit-learn pipeline and evaluation]
     API --> Export[CSV / JSON / joblib / ZIP exports]
-    API --> SQL[(MySQL metadata)]
+    API --> SQL[(SQLAlchemy metadata database)]
     Profile --> SQL
     EDA --> SQL
     ML --> SQL
 ```
+
+Database selection is controlled only by `DATABASE_URL`: local development uses MySQL through PyMySQL, production uses Neon PostgreSQL through psycopg3, and automated tests use in-memory SQLite. ORM models and services are shared across environments; Alembic manages schema changes.
 
 ## Data separation
 

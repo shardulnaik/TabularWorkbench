@@ -9,8 +9,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api.routes import charts, cleaning, datasets, eda, exports, health, ml
 from app.core.config import settings
 from app.core.logging_config import configure_logging
-from app.db.base import Base
-from app.db.models import ChartRun, CleaningLog, DatasetSession, ModelRun  # Ensure ORM metadata is registered.
 from app.db.session import SessionLocal, engine
 from app.services.session_service import cleanup_expired_sessions
 
@@ -20,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create missing tables for straightforward local setup. Keep Alembic available for
-    # versioned schema changes as the application evolves.
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         cleanup_expired_sessions(db)

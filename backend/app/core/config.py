@@ -1,9 +1,19 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+
+def normalize_database_url(database_url: str) -> str:
+    url = make_url(database_url)
+    if url.drivername in {"postgres", "postgresql"}:
+        url = url.set(drivername="postgresql+psycopg")
+        return url.render_as_string(hide_password=False)
+    return database_url
 
 
 class Settings(BaseSettings):
@@ -11,7 +21,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     app_name: str = "Tabular Workbench"
-    database_url: str = "sqlite+pysqlite:///./tabular_workbench.db"
+    database_url: str
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     max_upload_mb: int = 20
     session_ttl_hours: int = 6
@@ -24,6 +34,11 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg3_for_postgresql(cls, value: str) -> str:
+        return normalize_database_url(value)
 
     @property
     def cors_origin_list(self) -> list[str]:
