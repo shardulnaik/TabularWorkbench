@@ -1,0 +1,30 @@
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+backend/.env
+frontend/.env.local
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+backend/runtime/
+backend/uploads/
+backend/tabular_workbench.db
+backend/tests/.test_runtime/
+
+# Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db

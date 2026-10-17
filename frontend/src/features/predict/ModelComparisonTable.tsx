@@ -1,0 +1,11 @@
+import type { ModelComparisonRow, ScoringMetric } from '../../types/ml';
+
+const metricLabels: Record<string, string> = { accuracy: 'Accuracy', f1_weighted: 'F1 (weighted)', recall_weighted: 'Recall (weighted)', precision_weighted: 'Precision (weighted)', balanced_accuracy: 'Balanced accuracy' };
+
+export function ModelComparisonTable({ models, metric, selectedModel, onSelect }: { models: ModelComparisonRow[]; metric: ScoringMetric; selectedModel: string; onSelect: (model: string) => void }) {
+  return <div className="table-scroll"><table className="data-table model-table"><thead><tr><th>Model</th><th>Accuracy</th><th>F1</th><th>Recall</th><th>Balanced accuracy</th><th>Choose</th></tr></thead><tbody>{models.map((row) => <tr key={row.model} className={row.model === selectedModel ? 'selected-row' : ''}><td><strong>{row.label}</strong>{row.model === 'dummy_classifier' && <small className="table-subtext">Simple baseline</small>}</td><td>{formatScore(row.cv_metrics.accuracy)}</td><td>{formatScore(row.cv_metrics.f1_weighted)}</td><td>{formatScore(row.cv_metrics.recall_weighted)}</td><td>{formatScore(row.cv_metrics.balanced_accuracy)}</td><td><label className="radio-choice"><input type="radio" name="model-choice" checked={row.model === selectedModel} onChange={() => onSelect(row.model)} /><span>{row.model === selectedModel ? 'Selected' : 'Select'}</span></label></td></tr>)}</tbody></table><p className="table-footnote">Rows are ranked by {metricLabels[metric] || metric} in cross-validation on the training data, not by the final test score.</p></div>;
+}
+
+function formatScore(value: number | null | undefined): string {
+  return value === null || value === undefined ? '—' : `${(value * 100).toFixed(1)}%`;
+}
