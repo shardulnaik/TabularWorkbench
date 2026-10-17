@@ -3,6 +3,7 @@ import { ArrowRight, BarChart3, BrainCircuit, ClipboardCheck, Download, Sparkles
 import { useNavigate, useParams } from 'react-router-dom';
 import { getDataset, getProfile } from '../api/datasets';
 import { getCleaningPlan } from '../api/cleaning';
+import { exportUrl } from '../api/exports';
 import { PageHeader } from '../components/layout/PageHeader';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -38,7 +39,7 @@ export function DatasetOverviewPage() {
     <ProfileSummary profile={profile} />
     <section className="panel quality-panel"><div className="panel-heading"><div><div className="eyebrow">RECOMMENDED NEXT STEP</div><h2>Review data cleaning</h2><p>{recommendationCount ? `${recommendationCount} cleaning option(s) are available for review.` : 'No obvious cleaning changes are currently recommended.'}</p></div><span className="panel-icon"><ClipboardCheck size={23} /></span></div>
       <div className="recommendation-chips">{plan.actions.filter((action) => action.available).slice(0, 4).map((action) => <div className="recommendation-chip" key={action.id}><span className={action.recommended ? 'chip-dot dot-green' : 'chip-dot dot-amber'} />{action.title}<small>{action.estimated_cells_or_rows.toLocaleString()}</small></div>)}{!recommendationCount && <p className="muted-copy">The dataset looks ready to explore. You can still review the profile or continue directly.</p>}</div>
-      <div className="panel-actions"><button className="button button-primary" onClick={() => navigate(`/datasets/${datasetId}/cleaning`)}>Review cleaning plan <ArrowRight size={16} /></button><a className="button button-secondary" href={`/api/v1/datasets/${datasetId}/exports/data-profile`} onClick={(event) => { event.preventDefault(); window.open(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1'}/datasets/${datasetId}/exports/data-profile`, '_blank', 'noopener,noreferrer'); }}><Download size={16} /> Download profile</a></div>
+      <div className="panel-actions"><button className="button button-primary" onClick={() => navigate(`/datasets/${datasetId}/cleaning`)}>Review cleaning plan <ArrowRight size={16} /></button><a className="button button-secondary" href={exportUrl(datasetId, 'data-profile')} target="_blank" rel="noopener noreferrer"><Download size={16} /> Download profile</a></div>
     </section>
     <DatasetPreview profile={profile} />
     <div className="section-title-row"><div><div className="eyebrow">YOUR NEXT MOVE</div><h2>Choose how to continue</h2><p>The chart and prediction workflows use the same cleaned dataset, independently.</p></div><Sparkles size={21} className="subtle-icon" /></div>

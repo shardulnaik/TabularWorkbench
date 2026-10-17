@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, Download, FileArchive, Info } from 'lucide-re
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { getModelRun } from '../api/ml';
 import { getDataset } from '../api/datasets';
+import { exportUrl } from '../api/exports';
 import { PageHeader } from '../components/layout/PageHeader';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -50,7 +51,7 @@ export function ResultsPage() {
     </>}
     {!hasEvaluation && <div className="panel empty-results"><div className="empty-results-icon"><FileArchive size={24} /></div><h2>Your result package</h2><p>The cleaned dataset, data-quality report and cleaning log are available now. Model-specific outputs appear here after a model has been evaluated.</p><Link className="button button-secondary" to={`/datasets/${datasetId}/predict`}>Go to prediction <ArrowRight size={16} /></Link></div>}
     <section className="panel"><div className="panel-heading"><div><h2>Download individual outputs</h2><p>Each file is generated from the current data revision and selected model run.</p></div></div><ExportCatalog datasetId={datasetId} runId={hasEvaluation ? runId : undefined} chartRunId={chartRunId} /></section>
-    <div className="zip-banner"><div className="zip-icon"><FileArchive size={24} /></div><div><h2>Everything in one package</h2><p>Includes the original upload unchanged, cleaned CSV, data profile, cleaning log, chart data from this revision, and selected-model artifacts when available.</p></div><a className="button button-primary" href={`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1'}/datasets/${datasetId}/exports/all.zip${hasEvaluation && runId ? `?run_id=${runId}` : ''}`}><Download size={16} /> Download ZIP</a></div>
+    <div className="zip-banner"><div className="zip-icon"><FileArchive size={24} /></div><div><h2>Everything in one package</h2><p>Includes the original upload unchanged, cleaned CSV, data profile, cleaning log, chart data from this revision, and selected-model artifacts when available.</p></div><a className="button button-primary" href={exportUrl(datasetId, 'all.zip', { runId: hasEvaluation ? runId : undefined })}><Download size={16} /> Download ZIP</a></div>
   </div>;
 }
 
