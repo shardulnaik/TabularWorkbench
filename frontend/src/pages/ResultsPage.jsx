@@ -45,22 +45,18 @@ export function ResultsPage() {
     return <div className="page-stack results-page">
       <PageHeader title="Results"/>
       {!hasEvaluation && <p className="muted-copy">{chartRunId ? 'Your chart is ready to download.' : 'Your cleaned data and data profile are ready to download.'}</p>}
+      {hasEvaluation && evaluation && <section className="panel result-model-panel">
+        <div className="panel-heading"><div><h2>{evaluation.selected_model_label}</h2><p>Target: {evaluation.target_column}</p></div></div>
+        <MetricsGrid evaluation={evaluation}/>
+      </section>}
       <section className="panel result-download-panel">
-        <div><h2>Download</h2></div>
-        <a className="button button-primary" href={exportUrl(datasetId, 'all.zip', { runId: hasEvaluation ? runId : undefined, chartRunId })}><Download size={16}/> Download all</a>
+        <div><h2>Download result</h2><p>Download your analysis as a ZIP file.</p></div>
+        <a className="button button-primary" href={exportUrl(datasetId, 'all.zip', { runId: hasEvaluation ? runId : undefined, chartRunId })}><Download size={16}/> Download ZIP</a>
       </section>
       <section className="panel result-chart-panel">
         <div><h2>Charts</h2></div>
         <button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/explore`, { state: { returnTo: `${location.pathname}${location.search}`, evaluation } })}><ChartNoAxesCombined size={17}/> Open charts</button>
       </section>
-      {hasEvaluation && evaluation && <details className="details-panel result-details">
-        <summary>View detailed model results</summary>
-        <div className="page-stack">
-          <section className="panel"><div className="panel-heading"><div><h2>Evaluation metrics</h2><p>{evaluation.selected_model_label} - target: {evaluation.target_column}</p></div></div>
-          <MetricsGrid evaluation={evaluation}/>
-          </section>
-        </div>
-      </details>}
     </div>;
 }
 

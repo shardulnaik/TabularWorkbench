@@ -27,6 +27,12 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .workflow-step.is-active .step-number { color: white; border-color: var(--primary); background: var(--primary); }
 .page-container { width: 100%; max-width: 1220px; padding: 33px 0 64px; margin: 0 auto; flex: 1; }
 .page-stack { display: flex; flex-direction: column; gap: 22px; }
+.processing-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(22, 30, 52, .38); backdrop-filter: blur(3px); }
+.processing-card { display: flex; align-items: center; flex-direction: column; gap: 10px; width: min(100%, 360px); padding: 28px 24px; border: 1px solid var(--line); border-radius: 18px; color: var(--ink); background: var(--surface); box-shadow: 0 18px 60px rgba(22, 30, 52, .2); text-align: center; }
+.processing-card strong { font: 800 16px Manrope, sans-serif; }
+.processing-card span { color: var(--muted); font-size: 12px; }
+.processing-spinner { color: var(--primary); animation: processing-spin .9s linear infinite; }
+@keyframes processing-spin { to { transform: rotate(360deg); } }
 .page-stack-narrow { max-width: 940px; margin: 0 auto; }
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-bottom: 1px; }
 .page-header h1, .hero-copy h1 { margin: 7px 0 8px; font-family: Manrope, 'DM Sans', sans-serif; font-weight: 800; letter-spacing: -1.4px; font-size: clamp(27px, 3vw, 37px); line-height: 1.14; color: #18213b; }
@@ -208,6 +214,9 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .history-arrow:hover:not(:disabled) { color: var(--primary); background: #eef1ff; }
 .history-arrow:disabled { color: #c1c7d3; opacity: 1; }
 .results-page { max-width: 860px; margin: 0 auto; }
+.result-model-panel .panel-heading { margin-bottom: 14px; }
+.result-model-panel .panel-heading h2 { margin-bottom: 4px; font: 800 19px Manrope, sans-serif; }
+.result-model-panel .panel-heading p { color: var(--muted); font-size: 12px; }
 .compact-result { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 14px; background: white; }
 .compact-result > div { display: flex; flex-direction: column; gap: 5px; padding: 18px; min-width: 0; }
 .compact-result > div + div { border-left: 1px solid var(--line); }

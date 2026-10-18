@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, LoaderCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { compareModels, evaluateModel } from '../api/ml';
@@ -70,6 +70,7 @@ export function PredictPage() {
         return null;
     const usableTargets = profile.columns.filter((column) => !column.is_constant && column.unique_count >= 2);
     return <div className="page-stack predict-page">
+    {(comparing || evaluating) && <div className="processing-overlay" role="status" aria-live="polite" aria-busy="true"><div className="processing-card"><LoaderCircle className="processing-spinner" size={34}/><strong>{comparing ? 'Comparing models' : 'Evaluating selected model'}</strong><span>{comparing ? 'This can take a little while. Please keep this page open.' : 'Calculating the held-out results…'}</span></div></div>}
     <PageHeader title="Model prediction"/>
     <section className="panel prediction-setup">
       <div className="target-compare-row"><label className="field"><span>Prediction target</span><select value={targetColumn} onChange={(event) => { setTargetColumn(event.target.value); setComparison(null); }}><option value="">Choose a column</option>{usableTargets.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}</select></label>
