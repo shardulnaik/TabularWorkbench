@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Download, Info } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
-import { getEdaSummary } from '../api/eda';
 import { createChart } from '../api/charts';
-import { exportUrl } from '../api/exports';
 import { PageHeader } from '../components/layout/PageHeader';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { ChartBuilder } from '../features/explore/ChartBuilder';
 import { ChartRenderer } from '../features/explore/ChartRenderer';
-import { StatsTable } from '../features/explore/StatsTable';
 export function ExplorePage() {
     const { datasetId = '' } = useParams();
     const navigate = useNavigate();
@@ -18,7 +15,6 @@ export function ExplorePage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
-    const [summary, setSummary] = useState(null);
     const [chartType, setChartType] = useState('histogram');
     const [xColumn, setXColumn] = useState('');
     const [yColumn, setYColumn] = useState('');
@@ -27,10 +23,9 @@ export function ExplorePage() {
     const load = () => {
         setLoading(true);
         setError('');
-        Promise.all([getProfile(datasetId), getEdaSummary(datasetId)])
-            .then(([p, s]) => {
+        getProfile(datasetId)
+            .then((p) => {
             setProfile(p.profile);
-            setSummary(s);
             const numeric = p.profile.columns.find((column) => column.kind === 'numeric' && !column.is_constant);
             const any = p.profile.columns.find((column) => !column.is_constant);
             const first = numeric?.name || any?.name || '';
@@ -85,13 +80,11 @@ export function ExplorePage() {
         return <ErrorState message={error} onRetry={load}/>;
     if (!profile)
         return null;
-    return <div className="page-stack">
-    <PageHeader eyebrow="EXPLORE · VISUALIZATION" title="Find the patterns in your data." description="Review the statistics first, then build a chart. Chart choices and column types are validated by the backend."/>
-    <StatsTable profile={profile}/>
+    return <div className="page-stack explore-page">
+    <PageHeader eyebrow="CHARTS" title="Explore your data." description="Make a chart, download it, or continue to model tuning."/>
     <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generate} busy={busy}/>
     {error && <ErrorState message={error}/>}
-    {chart && <><ChartRenderer chart={chart}/><div className="chart-actions"><a className="button button-secondary" href={exportUrl(datasetId, 'chart-data', { chartRunId: chart.chart_run_id })}><Download size={16}/> Download chart data</a><button className="button button-primary" onClick={() => navigate(`/datasets/${datasetId}/results?chartRunId=${chart.chart_run_id}`)}>Open results & downloads <ArrowRight size={16}/></button></div></>}
-    <div className="quiet-note"><Info size={16}/><span>Charts describe your data; they do not automatically affect the separate machine-learning workflow.</span></div>
-    {summary && <details className="details-panel"><summary>More about this dataset's numeric relationships</summary><pre>{JSON.stringify(summary.correlation || {}, null, 2)}</pre></details>}
+    {chart && <><ChartRenderer chart={chart}/><div className="chart-actions"><button className="button button-primary" onClick={() => navigate(`/datasets/${datasetId}/predict`)}>Proceed to model tuning <ArrowRight size={16}/></button></div></>}
+    {!chart && <div className="chart-next-step"><span>Want to skip charts?</span><button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/predict`)}>Proceed to model tuning <ArrowRight size={16}/></button></div>}
   </div>;
 }

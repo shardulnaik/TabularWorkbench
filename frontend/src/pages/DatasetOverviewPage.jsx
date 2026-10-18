@@ -1,49 +1,56 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, BarChart3, BrainCircuit, ClipboardCheck, Download, Sparkles } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getDataset, getProfile } from '../api/datasets';
-import { getCleaningPlan } from '../api/cleaning';
-import { exportUrl } from '../api/exports';
-import { PageHeader } from '../components/layout/PageHeader';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
-import { StatusPill } from '../components/common/StatusPill';
-import { ProfileSummary } from '../features/overview/ProfileSummary';
-import { DatasetPreview } from '../features/overview/DatasetPreview';
+
 export function DatasetOverviewPage() {
     const { datasetId = '' } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [details, setDetails] = useState(null);
     const [profile, setProfile] = useState(null);
-    const [plan, setPlan] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+
     const load = () => {
         setLoading(true);
         setError('');
-        Promise.all([getDataset(datasetId), getProfile(datasetId), getCleaningPlan(datasetId)])
-            .then(([newDetails, profileResponse, newPlan]) => { setDetails(newDetails); setProfile(profileResponse.profile); setPlan(newPlan); })
-            .catch((reason) => setError(reason instanceof Error ? reason.message : 'Could not load the dataset profile.'))
+        Promise.all([getDataset(datasetId), getProfile(datasetId)])
+            .then(([newDetails, profileResponse]) => {
+            setDetails(newDetails);
+            setProfile(profileResponse.profile);
+        })
+            .catch((reason) => setError(reason instanceof Error ? reason.message : 'Could not load the dataset.'))
             .finally(() => setLoading(false));
     };
+
     useEffect(() => { load(); }, [datasetId]);
+
     if (loading)
-        return <LoadingState label="Analyzing your dataset health…"/>;
+        return <LoadingState label="Getting your data ready…"/>;
     if (error)
         return <ErrorState message={error} onRetry={load}/>;
-    if (!details || !profile || !plan)
+    if (!details || !profile)
         return null;
-    const recommendationCount = plan.actions.filter((action) => action.available).length;
-    return <div className="page-stack">
-    <PageHeader eyebrow="STEP 01 · DATASET HEALTH" title="Here's what we found." description={`A first look at ${details.filename}. Review data-quality issues before exploring or training a model.`} action={<StatusPill tone="info">{details.row_count.toLocaleString()} rows</StatusPill>}/>
-    <ProfileSummary profile={profile}/>
-    <section className="panel quality-panel"><div className="panel-heading"><div><div className="eyebrow">RECOMMENDED NEXT STEP</div><h2>Review data cleaning</h2><p>{recommendationCount ? `${recommendationCount} cleaning option(s) are available for review.` : 'No obvious cleaning changes are currently recommended.'}</p></div><span className="panel-icon"><ClipboardCheck size={23}/></span></div>
-      <div className="recommendation-chips">{plan.actions.filter((action) => action.available).slice(0, 4).map((action) => <div className="recommendation-chip" key={action.id}><span className={action.recommended ? 'chip-dot dot-green' : 'chip-dot dot-amber'}/>{action.title}<small>{action.estimated_cells_or_rows.toLocaleString()}</small></div>)}{!recommendationCount && <p className="muted-copy">The dataset looks ready to explore. You can still review the profile or continue directly.</p>}</div>
-      <div className="panel-actions"><button className="button button-primary" onClick={() => navigate(`/datasets/${datasetId}/cleaning`)}>Review cleaning plan <ArrowRight size={16}/></button><a className="button button-secondary" href={exportUrl(datasetId, 'data-profile')} target="_blank" rel="noopener noreferrer"><Download size={16}/> Download profile</a></div>
-    </section>
-    <DatasetPreview profile={profile}/>
-    <div className="section-title-row"><div><div className="eyebrow">YOUR NEXT MOVE</div><h2>Choose how to continue</h2><p>The chart and prediction workflows use the same cleaned dataset, independently.</p></div><Sparkles size={21} className="subtle-icon"/></div>
-    <div className="branch-grid"><button className="branch-card" onClick={() => navigate(`/datasets/${datasetId}/explore`)}><span className="branch-icon branch-blue"><BarChart3 size={23}/></span><span className="branch-copy"><strong>Explore statistics & charts</strong><small>Inspect distributions, compare columns and create downloadable charts.</small></span><ArrowRight size={18}/></button><button className="branch-card" onClick={() => navigate(`/datasets/${datasetId}/predict`)}><span className="branch-icon branch-purple"><BrainCircuit size={23}/></span><span className="branch-copy"><strong>Build a prediction model</strong><small>Choose a target, compare classifiers and evaluate the model you select.</small></span><ArrowRight size={18}/></button></div>
-    <div className="quiet-note"><Sparkles size={16}/><span>Only selected cleaning actions will be applied. Your original upload remains separate and is never overwritten.</span></div>
-  </div>;
+
+    const autoCleaned = location.state?.autoCleaned;
+    return <div className="page-stack page-stack-narrow dataset-ready">
+      <div className="ready-icon"><CheckCircle2 size={25}/></div>
+      <div className="ready-heading">
+        <div className="eyebrow"><Sparkles size={13}/> READY TO EXPLORE</div>
+        <h1>Your data is ready.</h1>
+        <p>{details.filename}</p>
+      </div>
+      <div className="compact-stats" aria-label="Dataset summary">
+        <div><strong>{profile.row_count.toLocaleString()}</strong><span>rows</span></div>
+        <div><strong>{profile.column_count.toLocaleString()}</strong><span>columns</span></div>
+        <div><strong>{profile.missing_cells.toLocaleString()}</strong><span>missing cells</span></div>
+      </div>
+      <p className="auto-clean-summary">{autoCleaned > 0
+          ? `${autoCleaned} safe cleaning step(s) applied automatically. Your original file is unchanged.`
+          : 'Safe cleaning checks complete. Your original file is unchanged.'}</p>
+      <button className="button button-primary ready-proceed" onClick={() => navigate(`/datasets/${datasetId}/explore`)}>Proceed <ArrowRight size={17}/></button>
+    </div>;
 }

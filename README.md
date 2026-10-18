@@ -5,12 +5,14 @@ A guided, full-stack application for tabular data profiling, conservative cleani
 ## Product workflow
 
 1. Upload a CSV or XLSX file (20 MB upload limit; up to 500,000 rows, 500 columns, and 2 million total cells).
-2. Review dataset health and the initial data preview.
-3. Choose and apply cleaning operations; the original upload and original parsed dataframe remain separate.
-4. Explore statistics and create schema-aware histograms, bar charts, line charts, scatter plots, and correlation heatmaps.
-5. Optionally compare Dummy Classifier, Logistic Regression, and Random Forest using cross-validation on the training partition.
+2. The app automatically applies available safe text cleanup (trimming whitespace and treating blank text as missing); the original upload remains unchanged.
+3. Review a short dataset summary, then proceed to charts or model tuning.
+4. Create and download schema-aware histograms, bar charts, line charts, scatter plots, and correlation heatmaps.
+5. Optionally compare Dummy Classifier, Logistic Regression, and Random Forest using cross-validation on the training partition. Accuracy is the default ranking metric.
 6. Select a candidate and evaluate it on the held-out test partition.
-7. Download individual outputs or a ZIP containing the original upload, current data profile, cleaned CSV, cleaning log, charts, model results and artifacts when available.
+7. Download the current analysis as a ZIP, or expand the individual-download list for specific outputs.
+
+Additional cleaning actions such as removing duplicates or imputing values are not applied automatically because they can change records or prediction labels.
 
 The initial ML release supports classification. Regression, persisted project history, scoring brand-new datasets with a trained pipeline, and PDF reports are outside this version's scope.
 
@@ -92,7 +94,7 @@ cd frontend
 npm run dev
 ```
 
-Open the URL Vite prints (normally `http://127.0.0.1:5173`). Use **Try a sample dataset** to exercise the workflow without preparing a CSV yourself.
+Open the URL Vite prints (normally `http://127.0.0.1:5173`). To try the workflow with sample data, upload `sample_data\employee_attrition_sample.csv` or `sample_data\student_marks_sample.csv`.
 
 ## Tests and static checks
 
