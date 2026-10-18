@@ -70,9 +70,11 @@ export function PredictPage() {
         return null;
     const usableTargets = profile.columns.filter((column) => !column.is_constant && column.unique_count >= 2);
     return <div className="page-stack predict-page">
-    <PageHeader eyebrow="MODEL TUNING" title="What do you want to predict?" description="Choose an outcome. We’ll compare a few models and recommend a good starting point."/>
-    <section className="panel"><label className="field"><span>Prediction target</span><select value={targetColumn} onChange={(event) => { setTargetColumn(event.target.value); setComparison(null); }}><option value="">Choose a column</option>{usableTargets.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}</select></label>
-      <button className="button button-primary" onClick={compare} disabled={comparing || !targetColumn}>{comparing ? 'Comparing models…' : 'Compare models'} <ArrowRight size={16}/></button>
+    <PageHeader eyebrow="MODEL TUNING" title="What do you want to predict?" description="Choose an outcome. We’ll compare five classification models and recommend a good starting point."/>
+    <section className="panel prediction-setup">
+      <div className="target-compare-row"><label className="field"><span>Prediction target</span><select value={targetColumn} onChange={(event) => { setTargetColumn(event.target.value); setComparison(null); }}><option value="">Choose a column</option>{usableTargets.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}</select></label>
+      <button className="button button-primary compare-button" onClick={compare} disabled={comparing || !targetColumn}>{comparing ? 'Comparing models…' : 'Compare models'} <ArrowRight size={16}/></button></div>
+      <p className="prediction-explainer">Choose the column you want the model to predict. Each row is one example; the selected column is the outcome, and the other usable columns are the inputs. The app trains and cross-validates each model on part of the rows, ranks their scores, then evaluates your chosen model on a held-out set of rows.</p>
     </section>
     {error && <ErrorState message={error}/>}
     {comparison && <>

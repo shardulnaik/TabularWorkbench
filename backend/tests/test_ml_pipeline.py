@@ -11,9 +11,9 @@ def test_compare_and_evaluate_selected_model(client):
     compared = client.post(f"/api/v1/datasets/{dataset_id}/ml/compare", json={"target_column": "Attrition", "scoring_metric": "accuracy"})
     assert compared.status_code == 200, compared.text
     payload = compared.json()
-    assert len(payload["models"]) == 3
-    assert payload["recommended_model"] in {"dummy_classifier", "logistic_regression", "random_forest"}
-    selected = payload["recommended_model"] if payload["recommended_model"] != "dummy_classifier" else "logistic_regression"
+    assert len(payload["models"]) == 5
+    assert payload["recommended_model"] in {"logistic_regression", "random_forest", "knn_classifier", "svc_classifier", "adaboost_classifier"}
+    selected = payload["recommended_model"]
     evaluated = client.post(f"/api/v1/datasets/{dataset_id}/ml/evaluate", json={"model_run_id": payload["model_run_id"], "selected_model": selected})
     assert evaluated.status_code == 200, evaluated.text
     result = evaluated.json()

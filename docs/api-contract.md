@@ -20,7 +20,7 @@ A successful first-sheet/CSV response includes `session_id`, `profile`, and `cle
 
 ## Machine learning
 
-`POST /datasets/{id}/ml/compare` accepts `target_column`, `scoring_metric`, `test_size`, and `random_state`. It returns the three candidate model scores, ranked using cross-validation on the training partition.
+`POST /datasets/{id}/ml/compare` accepts `target_column`, `scoring_metric`, `test_size`, and `random_state`. It returns five candidate model scores, ranked using cross-validation on the training partition.
 
 `POST /datasets/{id}/ml/evaluate` accepts `model_run_id` and `selected_model`. The selected pipeline is evaluated on the preserved holdout partition; metrics, confusion matrix, classification report, feature signals, configuration, and artifact availability are returned.
 

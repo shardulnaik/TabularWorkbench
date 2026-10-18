@@ -29,7 +29,7 @@ export function AppShell() {
       </header>
 
       {datasetId && (currentStage >= 0 || isChartsPage) && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
-          <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={() => navigate(isChartsPage ? (location.state?.returnTo || stages[1]) : stages[currentStage - 1])}><ArrowLeft size={19}/></button>
+          <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={() => navigate(isChartsPage ? (location.state?.returnTo || stages[1]) : stages[currentStage - 1], isChartsPage ? { replace: true } : undefined)}><ArrowLeft size={19}/></button>
           {!isChartsPage && <button type="button" className="history-arrow" aria-label="Next page" disabled={!canGoForward} onClick={() => navigate(stages[currentStage + 1])}><ArrowRight size={19}/></button>}
         </nav>)}
 

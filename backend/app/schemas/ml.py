@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 ScoringMetric = Literal["accuracy", "f1_weighted", "recall_weighted", "balanced_accuracy", "precision_weighted"]
-ModelName = Literal["dummy_classifier", "logistic_regression", "random_forest"]
+ModelName = Literal["logistic_regression", "random_forest", "knn_classifier", "svc_classifier", "adaboost_classifier"]
 
 
 class ModelCompareRequest(BaseModel):

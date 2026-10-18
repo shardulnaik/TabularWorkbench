@@ -6,9 +6,9 @@ A guided, full-stack application for tabular data profiling, conservative cleani
 
 1. Upload a CSV or XLSX file (20 MB upload limit; up to 500,000 rows, 500 columns, and 2 million total cells).
 2. The app automatically applies available safe text cleanup (trimming whitespace and treating blank text as missing); the original upload remains unchanged.
-3. Review a short dataset summary, then proceed to charts or model tuning.
+3. Review a short dataset summary, then proceed to model tuning. Charts are available from the results page.
 4. Create and download schema-aware histograms, bar charts, line charts, scatter plots, and correlation heatmaps.
-5. Optionally compare Dummy Classifier, Logistic Regression, and Random Forest using cross-validation on the training partition. Accuracy is the default ranking metric.
+5. Compare Logistic Regression, Random Forest, K-Nearest Neighbors, Support Vector Machine (RBF), and AdaBoost using cross-validation on the training partition. Accuracy is the default ranking metric.
 6. Select a candidate and evaluate it on the held-out test partition.
 7. Download the current analysis as a ZIP, or expand the individual-download list for specific outputs.
 

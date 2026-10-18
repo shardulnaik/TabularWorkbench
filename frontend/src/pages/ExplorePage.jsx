@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { createChart } from '../api/charts';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -11,8 +10,6 @@ import { ChartRenderer } from '../features/explore/ChartRenderer';
 export function ExplorePage() {
     const { datasetId = '' } = useParams();
     const navigate = useNavigate();
-    const location = useLocation();
-    const returnTo = location.state?.returnTo || `/datasets/${datasetId}/predict`;
     const [profile, setProfile] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -87,6 +84,5 @@ export function ExplorePage() {
     <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generate} busy={busy}/>
     {error && <ErrorState message={error}/>}
     {chart && <ChartRenderer chart={chart}/>}
-    <div className="chart-actions"><button className="button button-secondary" onClick={() => navigate(returnTo, { replace: true })}><ArrowLeft size={16}/> Return to results</button></div>
   </div>;
 }

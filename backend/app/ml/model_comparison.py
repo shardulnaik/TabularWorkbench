@@ -2,31 +2,38 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer, f1_score, precision_score, recall_score
 from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
 
 from app.ml.preprocessing import build_preprocessor
 
 MODEL_LABELS = {
-    "dummy_classifier": "Dummy Classifier (baseline)",
     "logistic_regression": "Logistic Regression",
     "random_forest": "Random Forest",
+    "knn_classifier": "K-Nearest Neighbors",
+    "svc_classifier": "Support Vector Machine (RBF)",
+    "adaboost_classifier": "AdaBoost",
 }
 
 
 def build_model(model_name: str, X: pd.DataFrame) -> Pipeline:
-    scale = model_name == "logistic_regression"
+    scale = model_name in {"logistic_regression", "knn_classifier", "svc_classifier"}
     preprocessor = build_preprocessor(X, scale_numeric=scale)
-    if model_name == "dummy_classifier":
-        estimator = DummyClassifier(strategy="most_frequent")
-    elif model_name == "logistic_regression":
+    if model_name == "logistic_regression":
         estimator = LogisticRegression(max_iter=1500, class_weight="balanced", random_state=42)
     elif model_name == "random_forest":
         estimator = RandomForestClassifier(n_estimators=160, min_samples_leaf=2, class_weight="balanced_subsample", random_state=42, n_jobs=-1)
+    elif model_name == "knn_classifier":
+        estimator = KNeighborsClassifier(n_neighbors=3, weights="distance", n_jobs=-1)
+    elif model_name == "svc_classifier":
+        estimator = SVC(kernel="rbf", class_weight="balanced", probability=True, random_state=42)
+    elif model_name == "adaboost_classifier":
+        estimator = AdaBoostClassifier(n_estimators=100, learning_rate=0.5, random_state=42)
     else:
         raise ValueError("Unsupported model selection")
     return Pipeline([("preprocessor", preprocessor), ("model", estimator)])

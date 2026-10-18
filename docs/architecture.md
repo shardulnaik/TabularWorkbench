@@ -34,7 +34,7 @@ Database selection is controlled only by `DATABASE_URL`: local development uses 
 1. Missing target labels are excluded from the labelled modelling rows.
 2. Identifier-like, constant and all-missing columns are excluded from features by default.
 3. A stratified holdout split is created once and its row positions are stored for the comparison run.
-4. Dummy Classifier, Logistic Regression and Random Forest are compared using cross-validation on the training rows.
+4. Logistic Regression, Random Forest, K-Nearest Neighbors, Support Vector Machine (RBF), and AdaBoost are compared using cross-validation on the training rows.
 5. The UI ranks models using a user-selected CV metric.
 6. The user-selected model is fitted on the same training partition and evaluated on the held-out test partition.
 7. Cleaning increments `data_revision`, so a stale comparison cannot be evaluated against changed data.

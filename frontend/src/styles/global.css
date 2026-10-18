@@ -188,6 +188,11 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .auto-clean-summary { max-width: 450px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .ready-proceed { min-width: 180px; }
 .model-options { display: flex; flex-direction: column; gap: 9px; }
+.prediction-setup { max-width: 980px; margin: 0 auto; }
+.target-compare-row { display: grid; grid-template-columns: minmax(0, 1fr) 220px; align-items: end; justify-content: center; gap: 14px; max-width: 840px; margin: 0 auto; }
+.target-compare-row .field { margin: 0; }
+.compare-button { min-height: 43px; justify-content: center; }
+.prediction-explainer { max-width: 840px; margin: 18px auto 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
 .model-option { display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; transition: .15s ease; }
 .model-option.selected { border-color: #bfc8ff; background: #f7f8ff; }
 .model-option input { accent-color: var(--primary); }
@@ -235,4 +240,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .result-download-panel .button { width: 100%; }
   .result-chart-panel { align-items: flex-start; flex-direction: column; }
   .result-chart-panel .button { width: 100%; }
+  .target-compare-row { grid-template-columns: 1fr; }
+  .target-compare-row .button { width: 100%; }
 }
