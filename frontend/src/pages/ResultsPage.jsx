@@ -8,8 +8,6 @@ import { PageHeader } from '../components/layout/PageHeader';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { MetricsGrid } from '../features/predict/MetricsGrid';
-import { ConfusionMatrix } from '../features/predict/ConfusionMatrix';
-import { ExportCatalog } from '../features/results/ExportCatalog';
 
 export function ResultsPage() {
     const { datasetId = '' } = useParams();
@@ -46,11 +44,6 @@ export function ResultsPage() {
     const hasEvaluation = Boolean(runId && evaluation && evaluation.completed !== false && evaluation.metrics);
     return <div className="page-stack results-page">
       <PageHeader title="Results"/>
-      {hasEvaluation && evaluation && <section className="compact-result">
-        <div><span>Model</span><strong>{evaluation.selected_model_label}</strong></div>
-        <div><span>Target</span><strong>{evaluation.target_column}</strong></div>
-        <div><span>Accuracy</span><strong>{formatPercent(evaluation.metrics.accuracy)}</strong></div>
-      </section>}
       {!hasEvaluation && <p className="muted-copy">{chartRunId ? 'Your chart is ready to download.' : 'Your cleaned data and data profile are ready to download.'}</p>}
       <section className="panel result-download-panel">
         <div><h2>Download</h2></div>
@@ -60,21 +53,15 @@ export function ResultsPage() {
         <div><h2>Charts</h2></div>
         <button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/explore`, { state: { returnTo: `${location.pathname}${location.search}`, evaluation } })}><ChartNoAxesCombined size={17}/> Open charts</button>
       </section>
-      {chartRunId && <a className="text-button" href={exportUrl(datasetId, 'chart-data', { chartRunId })}><Download size={15}/> Download chart data</a>}
       {hasEvaluation && evaluation && <details className="details-panel result-details">
         <summary>View detailed model results</summary>
         <div className="page-stack">
+          <section className="panel"><div className="panel-heading"><div><h2>Evaluation metrics</h2><p>{evaluation.selected_model_label} - target: {evaluation.target_column}</p></div></div>
           <MetricsGrid evaluation={evaluation}/>
-          <section className="panel"><div className="panel-heading"><div><h2>Confusion matrix</h2></div></div><ConfusionMatrix labels={evaluation.confusion_matrix.labels} matrix={evaluation.confusion_matrix.matrix}/></section>
-          <section className="panel"><div className="panel-heading"><div><h2>Model comparison</h2></div></div><div className="table-scroll"><table className="data-table"><thead><tr><th>Model</th><th>Accuracy</th><th>F1</th><th>Recall</th><th>Balanced accuracy</th></tr></thead><tbody>{evaluation.comparison.map((model) => <tr key={model.model}><td><strong>{model.label}</strong></td><td>{formatPercent(model.cv_metrics.accuracy)}</td><td>{formatPercent(model.cv_metrics.f1_weighted)}</td><td>{formatPercent(model.cv_metrics.recall_weighted)}</td><td>{formatPercent(model.cv_metrics.balanced_accuracy)}</td></tr>)}</tbody></table></div></section>
-          <details className="details-panel"><summary>Per-class evaluation and model configuration</summary><pre>{JSON.stringify({ classification_report: evaluation.classification_report, configuration: evaluation.model_configuration, excluded_columns: evaluation.excluded_columns }, null, 2)}</pre></details>
-          {evaluation.feature_signals.length > 0 && <section className="panel"><div className="panel-heading"><div><h2>Top model signals</h2></div></div><div className="signal-list">{evaluation.feature_signals.map((signal) => <div className="signal-row" key={signal.feature}><span>{signal.feature}</span><div className="signal-track"><span style={{ width: `${Math.max(2, signal.importance / Math.max(...evaluation.feature_signals.map((item) => item.importance), 0.00001) * 100)}%` }}/></div><strong>{signal.importance.toFixed(3)}</strong></div>)}</div></section>}
+          </section>
         </div>
       </details>}
-      <details className="details-panel result-details"><summary>Download individual files</summary><ExportCatalog datasetId={datasetId} runId={hasEvaluation ? runId : undefined} chartRunId={chartRunId}/></details>
     </div>;
 }
 
-function formatPercent(value) {
-    return value === null || value === undefined || !Number.isFinite(value) ? '—' : `${(value * 100).toFixed(1)}%`;
-}
+
