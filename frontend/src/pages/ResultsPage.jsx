@@ -7,7 +7,6 @@ import { exportUrl } from '../api/exports';
 import { PageHeader } from '../components/layout/PageHeader';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
-import { MetricsGrid } from '../features/predict/MetricsGrid';
 
 export function ResultsPage() {
     const { datasetId = '' } = useParams();
@@ -46,8 +45,7 @@ export function ResultsPage() {
       <PageHeader title="Results"/>
       {!hasEvaluation && <p className="muted-copy">{chartRunId ? 'Your chart is ready to download.' : 'Your cleaned data and data profile are ready to download.'}</p>}
       {hasEvaluation && evaluation && <section className="panel result-model-panel">
-        <div className="panel-heading"><div><h2>{evaluation.selected_model_label}</h2><p>Target: {evaluation.target_column}</p></div></div>
-        <MetricsGrid evaluation={evaluation}/>
+        <h2>{evaluation.selected_model_label}</h2>
       </section>}
       <section className="panel result-download-panel">
         <div><h2>Download result</h2><p>Download your analysis as a ZIP file.</p></div>
