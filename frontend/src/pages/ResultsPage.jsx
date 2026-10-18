@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Download } from 'lucide-react';
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { ChartNoAxesCombined, Download } from 'lucide-react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getModelRun } from '../api/ml';
 import { getDataset } from '../api/datasets';
 import { exportUrl } from '../api/exports';
@@ -15,6 +15,7 @@ export function ResultsPage() {
     const { datasetId = '' } = useParams();
     const [params] = useSearchParams();
     const location = useLocation();
+    const navigate = useNavigate();
     const runId = params.get('runId') || undefined;
     const chartRunId = params.get('chartRunId') || undefined;
     const [details, setDetails] = useState(null);
@@ -55,6 +56,10 @@ export function ResultsPage() {
         <div><h2>Download your work</h2><p>Get the current analysis and its outputs in one file.</p></div>
         <a className="button button-primary" href={exportUrl(datasetId, 'all.zip', { runId: hasEvaluation ? runId : undefined, chartRunId })}><Download size={16}/> Download all</a>
       </section>
+      <section className="panel result-chart-panel">
+        <div><h2>Need a chart?</h2><p>Create a chart, download it as an image, then return here to your results.</p></div>
+        <button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/explore`, { state: { returnTo: `${location.pathname}${location.search}`, evaluation } })}><ChartNoAxesCombined size={17}/> Create or download a chart</button>
+      </section>
       {chartRunId && <a className="text-button" href={exportUrl(datasetId, 'chart-data', { chartRunId })}><Download size={15}/> Download chart data</a>}
       {hasEvaluation && evaluation && <details className="details-panel result-details">
         <summary>View detailed model results</summary>
@@ -67,7 +72,6 @@ export function ResultsPage() {
         </div>
       </details>}
       <details className="details-panel result-details"><summary>Download individual files</summary><ExportCatalog datasetId={datasetId} runId={hasEvaluation ? runId : undefined} chartRunId={chartRunId}/></details>
-      <Link className="text-button" to={`/datasets/${datasetId}/explore`}>Back to charts <ArrowRight size={15}/></Link>
     </div>;
 }
 

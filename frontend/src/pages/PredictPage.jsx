@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, ChartNoAxesCombined } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { compareModels, evaluateModel } from '../api/ml';
@@ -70,7 +70,7 @@ export function PredictPage() {
         return null;
     const usableTargets = profile.columns.filter((column) => !column.is_constant && column.unique_count >= 2);
     return <div className="page-stack predict-page">
-    <PageHeader eyebrow="PREDICTION" title="What do you want to predict?" description="Choose an outcome and compare available models." actions={<button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/explore`)}><ChartNoAxesCombined size={16}/> Open charts</button>}/>
+    <PageHeader eyebrow="MODEL TUNING" title="What do you want to predict?" description="Choose an outcome. We’ll compare a few models and recommend a good starting point."/>
     <section className="panel"><label className="field"><span>Prediction target</span><select value={targetColumn} onChange={(event) => { setTargetColumn(event.target.value); setComparison(null); }}><option value="">Choose a column</option>{usableTargets.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}</select></label>
       <button className="button button-primary" onClick={compare} disabled={comparing || !targetColumn}>{comparing ? 'Comparing models…' : 'Compare models'} <ArrowRight size={16}/></button>
     </section>

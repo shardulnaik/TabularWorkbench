@@ -209,6 +209,9 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .compact-result span { color: var(--muted); font-size: 11px; }
 .compact-result strong { color: var(--ink); font-size: 14px; overflow-wrap: anywhere; }
 .result-download-panel { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.result-chart-panel { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.result-chart-panel h2 { margin: 0 0 5px; font: 800 17px Manrope, sans-serif; }
+.result-chart-panel p { color: var(--muted); font-size: 12px; }
 .result-download-panel h2 { margin: 0 0 5px; font: 800 17px Manrope, sans-serif; }
 .result-download-panel p { color: var(--muted); font-size: 12px; }
 .result-details { background: transparent; }
@@ -230,4 +233,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .compact-result strong { font-size: 12px; }
   .result-download-panel { align-items: flex-start; flex-direction: column; }
   .result-download-panel .button { width: 100%; }
+  .result-chart-panel { align-items: flex-start; flex-direction: column; }
+  .result-chart-panel .button { width: 100%; }
 }

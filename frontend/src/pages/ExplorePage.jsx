@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { createChart } from '../api/charts';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -11,6 +11,8 @@ import { ChartRenderer } from '../features/explore/ChartRenderer';
 export function ExplorePage() {
     const { datasetId = '' } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const returnTo = location.state?.returnTo || `/datasets/${datasetId}/predict`;
     const [profile, setProfile] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -81,10 +83,10 @@ export function ExplorePage() {
     if (!profile)
         return null;
     return <div className="page-stack explore-page">
-    <PageHeader eyebrow="CHARTS" title="Explore your data." description="Make a chart, download it, or continue to model tuning."/>
+    <PageHeader eyebrow="CHARTS" title="Explore your data." description="Build a chart and download it as an image."/>
     <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generate} busy={busy}/>
     {error && <ErrorState message={error}/>}
-    {chart && <><ChartRenderer chart={chart}/><div className="chart-actions"><button className="button button-primary" onClick={() => navigate(`/datasets/${datasetId}/predict`)}>Proceed to model tuning <ArrowRight size={16}/></button></div></>}
-    {!chart && <div className="chart-next-step"><span>Want to skip charts?</span><button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/predict`)}>Proceed to model tuning <ArrowRight size={16}/></button></div>}
+    {chart && <ChartRenderer chart={chart}/>}
+    <div className="chart-actions"><button className="button button-secondary" onClick={() => navigate(returnTo, { replace: true })}><ArrowLeft size={16}/> Return to results</button></div>
   </div>;
 }
