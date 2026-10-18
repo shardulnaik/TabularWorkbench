@@ -15,7 +15,7 @@ export function ModelComparisonTable({ models, metric, selectedModel, recommende
       <details className="details-panel model-details">
         <summary>See all comparison scores</summary>
         <div className="table-scroll"><table className="data-table"><thead><tr><th>Model</th>{metrics.map(([, label]) => <th key={label}>{label}</th>)}</tr></thead><tbody>{models.map((row) => <tr key={row.model}><td>{row.label}</td>{metrics.map(([key]) => <td key={key}>{formatScore(row.cv_metrics[key])}</td>)}</tr>)}</tbody></table></div>
-        <p className="table-footnote">Scores use cross-validation on training data. The held-out test set is used only after you choose a model.</p>
+        <p className="table-footnote">Cross-validation scores; final testing uses separate rows.</p>
       </details>
     </div>;
 }

@@ -10,11 +10,11 @@ vi.mock('../api/cleaning', () => ({
 import { uploadDataset } from '../api/datasets';
 import { applyCleaning, getCleaningPlan } from '../api/cleaning';
 describe('UploadPage', () => {
-    it('keeps the starting screen focused on upload and the workflow', () => {
+    it('keeps the starting screen focused on the centered upload entry point', () => {
         render(<MemoryRouter><UploadPage /></MemoryRouter>);
-        expect(screen.getByRole('heading', { name: /your data,.*made clear/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /upload a file/i })).toBeInTheDocument();
         expect(screen.getByText(/drop your spreadsheet here/i)).toBeInTheDocument();
-        expect(screen.getByText(/automatically clean safe issues/i)).toBeInTheDocument();
+        expect(screen.queryByText(/made clear/i)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /try a sample dataset/i })).not.toBeInTheDocument();
     });
 

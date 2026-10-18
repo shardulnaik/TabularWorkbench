@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UploadDropzone } from '../features/upload/UploadDropzone';
 import { ErrorState } from '../components/common/ErrorState';
@@ -22,12 +21,9 @@ export function UploadPage() {
         setError('');
         try {
             const plan = await getCleaningPlan(datasetId);
-            const result = plan.recommended_action_ids.length
-                ? await applyCleaning(datasetId, plan.recommended_action_ids)
-                : { actions_applied: [] };
-            navigate(`/datasets/${datasetId}`, {
-                state: { autoCleaned: result.actions_applied.length },
-            });
+            if (plan.recommended_action_ids.length)
+                await applyCleaning(datasetId, plan.recommended_action_ids);
+            navigate(`/datasets/${datasetId}`);
         }
         catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Automatic cleaning failed.');
@@ -80,17 +76,12 @@ export function UploadPage() {
     };
 
     return <div className="upload-page upload-page-simple">
-      <section className="upload-intro">
-        <div className="upload-symbol" aria-hidden="true"><FileSpreadsheet size={56} strokeWidth={1.35}/></div>
-      </section>
-
       <section className="upload-card">
-        <div className="upload-card-heading"><h2>Upload your data</h2></div>
+        <div className="upload-card-heading"><h2>Upload a file</h2></div>
         <UploadDropzone onFile={onFile} disabled={busy}/>
         {busy && <div className="upload-status"><span className="spinner-dot"/> {busyLabel}</div>}
         {error && <ErrorState message={error} onRetry={retry}/>}
         {sheets.length > 0 && file && <div className="sheet-select-panel"><label className="field"><span>Choose a sheet</span><select value={sheetName} onChange={(event) => setSheetName(event.target.value)}>{sheets.map((sheet) => <option value={sheet} key={sheet}>{sheet}</option>)}</select></label><button className="button button-primary" disabled={busy || !sheetName} onClick={() => void processFile(file, sheetName)}>Continue</button></div>}
-        <div className="upload-card-footer"><span>Your original file is never changed.</span></div>
       </section>
     </div>;
 }

@@ -1,8 +1,14 @@
-import { ArrowLeft, ArrowRight, Layers3 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Layers3, Moon, Sun } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 export function AppShell() {
     const location = useLocation();
     const navigate = useNavigate();
+    const [theme, setTheme] = useState(() => window.localStorage.getItem('tabular-theme') || 'light');
+    useEffect(() => {
+        document.documentElement.dataset.theme = theme;
+        window.localStorage.setItem('tabular-theme', theme);
+    }, [theme]);
     const match = location.pathname.match(/^\/datasets\/([^/]+)/);
     const datasetId = match?.[1];
     const stages = datasetId ? [
@@ -26,6 +32,9 @@ export function AppShell() {
           <span className="brand-mark"><Layers3 size={20}/></span>
           <span className="brand-copy"><strong>Tabular</strong><span>WORKBENCH</span></span>
         </Link>
+        <button className="theme-toggle" type="button" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          {theme === 'light' ? <Moon size={18}/> : <Sun size={18}/>}
+        </button>
       </header>
 
       {datasetId && (currentStage >= 0 || isChartsPage) && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">

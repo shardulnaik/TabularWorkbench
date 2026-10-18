@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { createChart } from '../api/charts';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -9,7 +9,6 @@ import { ChartBuilder } from '../features/explore/ChartBuilder';
 import { ChartRenderer } from '../features/explore/ChartRenderer';
 export function ExplorePage() {
     const { datasetId = '' } = useParams();
-    const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -80,7 +79,7 @@ export function ExplorePage() {
     if (!profile)
         return null;
     return <div className="page-stack explore-page">
-    <PageHeader eyebrow="CHARTS" title="Explore your data." description="Build a chart and download it as an image."/>
+    <PageHeader title="Charts"/>
     <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generate} busy={busy}/>
     {error && <ErrorState message={error}/>}
     {chart && <ChartRenderer chart={chart}/>}
