@@ -16,7 +16,7 @@ The initial ML release supports classification. Regression, persisted project hi
 
 ## Technology
 
-- Frontend: React, TypeScript, Vite, React Router, Recharts
+- Frontend: React, JavaScript, Vite, React Router, Recharts
 - Backend: FastAPI, Pydantic Settings, Pandas, NumPy
 - Database: SQLAlchemy with MySQL/PyMySQL for local development and PostgreSQL/psycopg for production; SQLite is used only by automated tests
 - ML: Scikit-learn Pipelines, ColumnTransformer, cross-validation, and held-out evaluation
@@ -56,7 +56,7 @@ if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
 cd ..
 ```
 
-`frontend/.env.local` should contain `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1` for local development.
+`frontend/.env.local` should contain `VITE_API_URL=http://127.0.0.1:8000` for local development. The frontend appends `/api/v1` when making API requests.
 
 ### 3. Start the backend
 
@@ -158,7 +158,7 @@ Run `pip check` and `npm list --depth=0` as dependency sanity checks. A green de
 
 - Import the repository.
 - Set the root directory to `frontend`.
-- Set `VITE_API_BASE_URL` to `https://YOUR-RENDER-SERVICE.onrender.com/api/v1`.
+- Set `VITE_API_URL` to `https://YOUR-RENDER-SERVICE.onrender.com`.
 - Deploy and verify that the Render CORS allowlist includes the exact frontend origin.
 
 There is no GitHub Actions workflow in this project. Tests are run locally; Vercel's native Git deployment integration is independent of GitHub Actions.
