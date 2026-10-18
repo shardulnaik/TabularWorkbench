@@ -51,6 +51,6 @@ export function DatasetOverviewPage() {
       <p className="auto-clean-summary">{autoCleaned > 0
           ? `${autoCleaned} safe cleaning step(s) applied automatically. Your original file is unchanged.`
           : 'Safe cleaning checks complete. Your original file is unchanged.'}</p>
-      <button className="button button-primary ready-proceed" onClick={() => navigate(`/datasets/${datasetId}/explore`)}>Proceed <ArrowRight size={17}/></button>
+      <button className="button button-primary ready-proceed" onClick={() => navigate(`/datasets/${datasetId}/predict`)}>Proceed <ArrowRight size={17}/></button>
     </div>;
 }

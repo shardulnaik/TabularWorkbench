@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Database, Sparkles } from 'lucide-react';
+import { FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UploadDropzone } from '../features/upload/UploadDropzone';
 import { ErrorState } from '../components/common/ErrorState';
@@ -81,10 +81,7 @@ export function UploadPage() {
 
     return <div className="upload-page upload-page-simple">
       <section className="upload-intro">
-        <div className="eyebrow"><Sparkles size={14}/> TABULAR WORKBENCH</div>
-        <h1>Your data,<br/><span>made clear.</span></h1>
-        <p>Upload a spreadsheet. We’ll automatically clean safe issues, then take you to charts or model tuning.</p>
-        <div className="upload-flow"><Database size={16}/><span>Upload</span><ArrowRight size={14}/><span>Auto-clean</span><ArrowRight size={14}/><span>Charts</span><ArrowRight size={14}/><span>Models</span></div>
+        <div className="upload-symbol" aria-hidden="true"><FileSpreadsheet size={56} strokeWidth={1.35}/></div>
       </section>
 
       <section className="upload-card">
@@ -92,7 +89,7 @@ export function UploadPage() {
         <UploadDropzone onFile={onFile} disabled={busy}/>
         {busy && <div className="upload-status"><span className="spinner-dot"/> {busyLabel}</div>}
         {error && <ErrorState message={error} onRetry={retry}/>}
-        {sheets.length > 0 && file && <div className="sheet-select-panel"><label className="field"><span>Choose a sheet</span><select value={sheetName} onChange={(event) => setSheetName(event.target.value)}>{sheets.map((sheet) => <option value={sheet} key={sheet}>{sheet}</option>)}</select></label><button className="button button-primary" disabled={busy || !sheetName} onClick={() => void processFile(file, sheetName)}>Continue <ArrowRight size={16}/></button></div>}
+        {sheets.length > 0 && file && <div className="sheet-select-panel"><label className="field"><span>Choose a sheet</span><select value={sheetName} onChange={(event) => setSheetName(event.target.value)}>{sheets.map((sheet) => <option value={sheet} key={sheet}>{sheet}</option>)}</select></label><button className="button button-primary" disabled={busy || !sheetName} onClick={() => void processFile(file, sheetName)}>Continue</button></div>}
         <div className="upload-card-footer"><span>Your original file is never changed.</span></div>
       </section>
     </div>;
