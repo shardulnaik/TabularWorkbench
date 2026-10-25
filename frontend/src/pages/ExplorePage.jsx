@@ -7,6 +7,7 @@ import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { ChartBuilder } from '../features/explore/ChartBuilder';
 import { ChartRenderer } from '../features/explore/ChartRenderer';
+import { ArrowLeft } from 'lucide-react';
 export function ExplorePage() {
     const { datasetId = '' } = useParams();
     const [profile, setProfile] = useState(null);
@@ -18,6 +19,7 @@ export function ExplorePage() {
     const [yColumn, setYColumn] = useState('');
     const [aggregation, setAggregation] = useState('mean');
     const [chart, setChart] = useState(null);
+    const [showChart, setShowChart] = useState(false);
     const load = () => {
         setLoading(true);
         setError('');
@@ -64,6 +66,7 @@ export function ExplorePage() {
         try {
             const generated = await createChart(datasetId, { chart_type: chartType, x_column: chartType === 'correlation_heatmap' ? undefined : xColumn, y_column: yColumn || undefined, aggregation });
             setChart(generated);
+            setShowChart(true);
         }
         catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Chart generation failed.');
@@ -78,10 +81,12 @@ export function ExplorePage() {
         return <ErrorState message={error} onRetry={load}/>;
     if (!profile)
         return null;
-    return <div className="page-stack explore-page">
-    <PageHeader title="Charts"/>
+    return <div className={`page-stack explore-page${showChart ? ' chart-focus' : ''}`}>
+    <PageHeader title={showChart && chart ? 'Your chart' : 'Charts'}/>
+    {!showChart && <>
     <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generate} busy={busy}/>
     {error && <ErrorState message={error}/>}
-    {chart && <ChartRenderer chart={chart}/>}
+    </>}
+    {showChart && chart && <><button className="button button-secondary chart-back" onClick={() => setShowChart(false)}><ArrowLeft size={16}/> Back to chart options</button><ChartRenderer chart={chart}/></>}
   </div>;
 }

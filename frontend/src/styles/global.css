@@ -305,6 +305,17 @@ html[data-theme="dark"] .theme-toggle { color: var(--ink); background: var(--sur
 html[data-theme="dark"] .prediction-explainer,
 html[data-theme="dark"] .page-header p,
 html[data-theme="dark"] .panel-heading p { color: var(--muted); }
+
+/* Keep generated outputs in a focused, single-purpose view. */
+.comparison-view { width: 100%; max-width: 980px; margin: 0 auto; }
+.comparison-actions { justify-content: space-between; }
+.chart-focus { width: 100%; max-width: 1080px; margin: 0 auto; }
+.chart-back { align-self: flex-start; }
+.chart-focus .chart-result { width: 100%; }
+@media (max-width: 640px) {
+  .comparison-actions { align-items: stretch; flex-direction: column-reverse; }
+  .comparison-actions .button { width: 100%; }
+}
 @media (max-width: 900px) {
   .upload-page-simple { grid-template-columns: 1fr; min-height: 0; gap: 24px; max-width: 620px; margin: 0 auto; }
   .upload-intro h1 { font-size: 44px; }
