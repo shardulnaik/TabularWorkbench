@@ -312,9 +312,37 @@ html[data-theme="dark"] .panel-heading p { color: var(--muted); }
 .chart-focus { width: 100%; max-width: 1080px; margin: 0 auto; }
 .chart-back { align-self: flex-start; }
 .chart-focus .chart-result { width: 100%; }
+.app-root:has(.comparison-view),
+.app-root:has(.chart-focus) { height: 100vh; min-height: 0; overflow: hidden; }
+.app-root:has(.comparison-view) .page-container,
+.app-root:has(.chart-focus) .page-container { min-height: 0; padding: 12px 0 16px; }
+.app-root:has(.comparison-view) .workflow-nav,
+.app-root:has(.chart-focus) .workflow-nav { margin-top: 8px; }
+.app-root:has(.comparison-view) .page-stack,
+.app-root:has(.chart-focus) .page-stack { gap: 10px; height: 100%; }
+.app-root:has(.comparison-view) .page-header h1,
+.app-root:has(.chart-focus) .page-header h1 { font-size: 25px; margin: 0; }
+.comparison-view { display: flex; flex-direction: column; gap: 8px; padding: 16px 20px; min-height: 0; flex: 1; }
+.comparison-view .panel-heading { margin-bottom: 2px; }
+.model-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.model-option { min-height: 48px; padding: 9px 12px; gap: 9px; }
+.model-option-name { font-size: 12px; }
+.model-option > strong { font-size: 13px; }
+.model-details { grid-column: 1 / -1; padding: 10px 12px; }
+.comparison-view .panel-footer { margin-top: auto; padding-top: 10px; }
+.chart-focus .chart-result { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 14px 18px; }
+.chart-focus .chart-result .panel-heading { margin-bottom: 10px; }
+.chart-focus .chart-canvas { height: clamp(260px, calc(100vh - 285px), 620px); min-height: 0; flex: 1; }
 @media (max-width: 640px) {
   .comparison-actions { align-items: stretch; flex-direction: column-reverse; }
   .comparison-actions .button { width: 100%; }
+  .app-root:has(.comparison-view), .app-root:has(.chart-focus) { height: auto; min-height: 100vh; overflow: auto; }
+  .app-root:has(.comparison-view) .page-container, .app-root:has(.chart-focus) .page-container { padding: 18px 16px 24px; }
+  .app-root:has(.comparison-view) .page-stack, .app-root:has(.chart-focus) .page-stack { height: auto; }
+  .model-options { grid-template-columns: 1fr; }
+  .comparison-view { flex: initial; }
+  .chart-focus .chart-result { flex: initial; }
+  .chart-focus .chart-canvas { height: 360px; flex: initial; }
 }
 @media (max-width: 900px) {
   .upload-page-simple { grid-template-columns: 1fr; min-height: 0; gap: 24px; max-width: 620px; margin: 0 auto; }
