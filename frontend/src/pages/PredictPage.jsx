@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, LoaderCircle } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { compareModels, evaluateModel } from '../api/ml';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -10,6 +10,7 @@ import { ModelComparisonTable } from '../features/predict/ModelComparisonTable';
 export function PredictPage() {
     const { datasetId = '' } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [profile, setProfile] = useState(null);
     const [targetColumn, setTargetColumn] = useState('');
     const [comparison, setComparison] = useState(null);
@@ -40,6 +41,7 @@ export function PredictPage() {
             setComparison(result);
             setSelectedModel(result.recommended_model);
             setShowComparison(true);
+            navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: true } });
         }
         catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Model comparison failed.');
@@ -83,7 +85,7 @@ export function PredictPage() {
     {showComparison && comparison && <>
       <section className="panel comparison-view"><div className="panel-heading"><div><h2>Model scores</h2><p>Results for {targetColumn}</p></div></div>
         <ModelComparisonTable models={comparison.models} metric="accuracy" selectedModel={selectedModel} recommendedModel={comparison.recommended_model} onSelect={(model) => setSelectedModel(model)}/>
-        <div className="panel-footer comparison-actions"><button className="button button-secondary" onClick={() => { setShowComparison(false); setComparison(null); }}>Back to target selection</button><button className="button button-primary" onClick={evaluate} disabled={evaluating}>{evaluating ? 'Evaluating model…' : 'Proceed with this model'} <ArrowRight size={16}/></button></div>
+        <div className="panel-footer comparison-actions"><button className="button button-secondary" onClick={() => { setShowComparison(false); setComparison(null); navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: false } }); }}>Back to target selection</button><button className="button button-primary" onClick={evaluate} disabled={evaluating}>{evaluating ? 'Evaluating model…' : 'Proceed with this model'} <ArrowRight size={16}/></button></div>
       </section>
     </>}
   </div>;

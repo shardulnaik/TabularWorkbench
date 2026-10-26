@@ -24,8 +24,11 @@ export function AppShell() {
         visited.push(location.pathname);
         sessionStorage.setItem(visitedKey, JSON.stringify(visited));
     }
-    const canGoBack = isChartsPage || currentStage > 0;
-    const canGoForward = currentStage >= 0 && currentStage < stages.length - 1 && visited.includes(stages[currentStage + 1]);
+    const isChartOutput = isChartsPage && location.state?.chartView === true;
+    const isComparisonView = location.pathname === `/datasets/${datasetId}/predict` && location.state?.comparisonView === true;
+    const canGoBack = isChartsPage ? Boolean(location.state?.returnTo) : currentStage >= 0;
+    const showBack = isChartsPage ? !isChartOutput : currentStage >= 0;
+    const showForward = currentStage === 1 && !isComparisonView && visited.includes(stages[currentStage + 1]);
     return (<div className="app-root">
       <header className="topbar">
         <Link className="brand" to="/" aria-label="Tabular Workbench home">
@@ -37,9 +40,9 @@ export function AppShell() {
         </button>
       </header>
 
-      {datasetId && (currentStage >= 0 || isChartsPage) && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
-          <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={() => navigate(isChartsPage ? (location.state?.returnTo || stages[1]) : stages[currentStage - 1], isChartsPage ? { replace: true } : undefined)}><ArrowLeft size={19}/></button>
-          {!isChartsPage && <button type="button" className="history-arrow" aria-label="Next page" disabled={!canGoForward} onClick={() => navigate(stages[currentStage + 1])}><ArrowRight size={19}/></button>}
+      {datasetId && (currentStage >= 0 || isChartsPage) && (showBack || showForward) && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
+          {showBack && <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={() => navigate(isChartsPage ? location.state.returnTo : currentStage === 0 ? '/' : stages[currentStage - 1], isChartsPage ? { replace: true } : undefined)}><ArrowLeft size={19}/></button>}
+          {showForward && <button type="button" className="history-arrow" aria-label="Next page" onClick={() => navigate(stages[currentStage + 1])}><ArrowRight size={19}/></button>}
         </nav>)}
 
         <main className="page-container"><Outlet /></main>

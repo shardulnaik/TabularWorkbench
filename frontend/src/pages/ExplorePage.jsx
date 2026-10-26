@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { createChart } from '../api/charts';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -10,6 +10,8 @@ import { ChartRenderer } from '../features/explore/ChartRenderer';
 import { ArrowLeft } from 'lucide-react';
 export function ExplorePage() {
     const { datasetId = '' } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -67,6 +69,7 @@ export function ExplorePage() {
             const generated = await createChart(datasetId, { chart_type: chartType, x_column: chartType === 'correlation_heatmap' ? undefined : xColumn, y_column: yColumn || undefined, aggregation });
             setChart(generated);
             setShowChart(true);
+            navigate(location.pathname, { replace: true, state: { ...location.state, chartView: true } });
         }
         catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Chart generation failed.');
@@ -87,6 +90,6 @@ export function ExplorePage() {
     <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generate} busy={busy}/>
     {error && <ErrorState message={error}/>}
     </>}
-    {showChart && chart && <><button className="button button-secondary chart-back" onClick={() => setShowChart(false)}><ArrowLeft size={16}/> Back to chart options</button><ChartRenderer chart={chart}/></>}
+    {showChart && chart && <><button className="button button-secondary chart-back" onClick={() => { setShowChart(false); navigate(location.pathname, { replace: true, state: { ...location.state, chartView: false } }); }}><ArrowLeft size={16}/> Back to chart options</button><ChartRenderer chart={chart}/></>}
   </div>;
 }
