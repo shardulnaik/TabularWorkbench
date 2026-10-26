@@ -93,7 +93,7 @@ export function PredictPage() {
     {showComparison && comparison && <>
       <section className="panel comparison-view"><div className="panel-heading"><div><h2>Model scores</h2><p>Results for {targetColumn}</p></div></div>
         <ModelComparisonTable models={comparison.models} metric="accuracy" selectedModel={selectedModel} recommendedModel={comparison.recommended_model} onSelect={(model) => { setSelectedModel(model); navigate(location.pathname, { replace: true, state: { ...location.state, selectedModel: model } }); }}/>
-        <div className="panel-footer comparison-actions"><button className="button button-secondary" onClick={() => { setShowComparison(false); navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: false, comparisonResult: comparison, targetColumn, selectedModel } }); }}>Back to target selection</button><button className="button button-primary" onClick={evaluate} disabled={evaluating}>{evaluating ? 'Evaluating model…' : 'Proceed with this model'} <ArrowRight size={16}/></button></div>
+        <div className="panel-footer comparison-actions"><button className="button button-primary" onClick={evaluate} disabled={evaluating}>{evaluating ? 'Evaluating model…' : 'Proceed with this model'} <ArrowRight size={16}/></button></div>
       </section>
     </>}
   </div>;
