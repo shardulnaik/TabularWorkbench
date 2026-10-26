@@ -18,17 +18,22 @@ export function AppShell() {
     ] : [];
     const currentStage = stages.indexOf(location.pathname);
     const isChartsPage = location.pathname === `/datasets/${datasetId}/explore`;
-    const visitedKey = `tabular-visited:${datasetId}`;
-    const visited = datasetId ? JSON.parse(sessionStorage.getItem(visitedKey) || '[]') : [];
-    if (datasetId && currentStage >= 0 && !visited.includes(location.pathname)) {
-        visited.push(location.pathname);
-        sessionStorage.setItem(visitedKey, JSON.stringify(visited));
-    }
+    const isPredictPage = location.pathname === `/datasets/${datasetId}/predict`;
     const isChartOutput = isChartsPage && location.state?.chartView === true;
-    const isComparisonView = location.pathname === `/datasets/${datasetId}/predict` && location.state?.comparisonView === true;
     const canGoBack = isChartsPage ? Boolean(location.state?.returnTo) : currentStage >= 0;
     const showBack = isChartsPage ? !isChartOutput : currentStage >= 0;
-    const showForward = currentStage === 1 && !isComparisonView && visited.includes(stages[currentStage + 1]);
+    const showForward = isPredictPage && Boolean(location.state?.comparisonResult) && !location.state?.comparisonView;
+    const goBack = () => {
+        if (isChartsPage) {
+            navigate(location.state.returnTo, { replace: true });
+        }
+        else if (isPredictPage && location.state?.comparisonView && location.state?.comparisonResult) {
+            navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: false } });
+        }
+        else {
+            navigate(currentStage === 0 ? '/' : stages[currentStage - 1]);
+        }
+    };
     return (<div className="app-root">
       <header className="topbar">
         <Link className="brand" to="/" aria-label="Tabular Workbench home">
@@ -41,8 +46,8 @@ export function AppShell() {
       </header>
 
       {datasetId && (currentStage >= 0 || isChartsPage) && (showBack || showForward) && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
-          {showBack && <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={() => navigate(isChartsPage ? location.state.returnTo : currentStage === 0 ? '/' : stages[currentStage - 1], isChartsPage ? { replace: true } : undefined)}><ArrowLeft size={19}/></button>}
-          {showForward && <button type="button" className="history-arrow" aria-label="Next page" onClick={() => navigate(stages[currentStage + 1])}><ArrowRight size={19}/></button>}
+          {showBack && <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={goBack}><ArrowLeft size={19}/></button>}
+          {showForward && <button type="button" className="history-arrow" aria-label="Open model selection" onClick={() => navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: true } })}><ArrowRight size={19}/></button>}
         </nav>)}
 
         <main className="page-container"><Outlet /></main>
