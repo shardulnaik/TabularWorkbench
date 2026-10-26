@@ -53,7 +53,7 @@ export function ResultsPage() {
       </section>
       <section className="panel result-chart-panel">
         <div><h2>Charts</h2></div>
-        <button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/explore`, { state: { returnTo: `${location.pathname}${location.search}`, evaluation } })}><ChartNoAxesCombined size={17}/> Open charts</button>
+        <button className="button button-secondary" onClick={() => navigate(`/datasets/${datasetId}/explore`, { state: { returnTo: `${location.pathname}${location.search}`, returnState: location.state, evaluation } })}><ChartNoAxesCombined size={17}/> Open charts</button>
       </section>
     </div>;
 }

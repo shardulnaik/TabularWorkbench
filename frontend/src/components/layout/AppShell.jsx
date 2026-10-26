@@ -25,10 +25,13 @@ export function AppShell() {
     const showForward = isPredictPage && Boolean(location.state?.comparisonResult) && !location.state?.comparisonView;
     const goBack = () => {
         if (isChartsPage) {
-            navigate(location.state.returnTo, { replace: true });
+            navigate(location.state.returnTo, { replace: true, state: location.state?.returnState });
         }
         else if (isPredictPage && location.state?.comparisonView && location.state?.comparisonResult) {
             navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: false } });
+        }
+        else if (currentStage === 2 && location.state?.comparisonResult) {
+            navigate(stages[1], { state: { ...location.state, comparisonView: true } });
         }
         else {
             navigate(currentStage === 0 ? '/' : stages[currentStage - 1]);

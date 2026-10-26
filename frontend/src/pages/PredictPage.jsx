@@ -66,7 +66,7 @@ export function PredictPage() {
         setError('');
         try {
             const result = await evaluateModel(datasetId, comparison.model_run_id, selectedModel);
-            navigate(`/datasets/${datasetId}/results?runId=${result.model_run_id}`, { state: { evaluation: result } });
+            navigate(`/datasets/${datasetId}/results?runId=${result.model_run_id}`, { state: { evaluation: result, comparisonResult: comparison, targetColumn, selectedModel, comparisonView: true } });
         }
         catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Model evaluation failed.');
