@@ -88,7 +88,6 @@ export function PredictPage() {
     {!showComparison && <section className="panel prediction-setup">
       <div className="target-compare-row"><label className="field"><span>Prediction target</span><select value={targetColumn} onChange={(event) => { const value = event.target.value; setTargetColumn(value); setComparison(null); setShowComparison(false); navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: false, comparisonResult: null, targetColumn: value } }); }}><option value="">Choose a column</option>{usableTargets.map((column) => <option key={column.name} value={column.name}>{column.name}</option>)}</select></label>
       <button className="button button-primary compare-button" onClick={compare} disabled={comparing || !targetColumn}>{comparing ? 'Comparing models…' : 'Compare models'} <ArrowRight size={16}/></button></div>
-      <p className="prediction-explainer">Choose the outcome column. The model learns from the other columns in each row; rows without an outcome are skipped.</p>
     </section>}
     {error && <ErrorState message={error}/>}
     {showComparison && comparison && <>

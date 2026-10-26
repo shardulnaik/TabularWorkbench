@@ -14,9 +14,9 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .brand { display: inline-flex; align-items: center; gap: 11px; }
 .brand-mark { display: grid; place-items: center; width: 38px; height: 38px; color: #fff; border-radius: 12px; background: linear-gradient(140deg, #6679f2, #485bd1); box-shadow: 0 7px 16px rgba(82,104,232,.23); }
 .brand-copy { display: flex; flex-direction: column; line-height: 1.08; gap: 3px; }
-.brand-copy strong { font-family: Manrope, sans-serif; font-size: 17px; font-weight: 800; letter-spacing: -.7px; }
+.brand-copy strong { font-family: Manrope, sans-serif; font-size: 17px; font-weight: 800; letter-spacing: -.55px; white-space: nowrap; }
 .brand-copy span { color: #8a92a8; font-size: 9px; font-weight: 700; letter-spacing: 2px; }
-.topbar-right { display: flex; gap: 16px; align-items: center; }
+.topbar-right, .topbar-actions { display: flex; gap: 10px; align-items: center; }
 .product-pill { display: flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid #e5e9f8; border-radius: 999px; color: #5868cf; background: #f8f9ff; font-size: 12px; font-weight: 700; }
 .user-dot { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #e9edff; color: #4e60d4; font-size: 11px; font-weight: 800; }
 .workflow-nav { max-width: 1220px; width: calc(100% - 56px); margin: 19px auto 0; padding: 5px; display: flex; gap: 4px; background: rgba(255,255,255,.75); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
@@ -198,7 +198,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .target-compare-row { display: grid; grid-template-columns: minmax(0, 1fr) 220px; align-items: end; justify-content: center; gap: 14px; max-width: 840px; margin: 0 auto; }
 .target-compare-row .field { margin: 0; }
 .compare-button { min-height: 43px; justify-content: center; }
-.prediction-explainer { max-width: 840px; margin: 18px auto 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
 .model-option { display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; transition: .15s ease; }
 .model-option.selected { border-color: #bfc8ff; background: #f7f8ff; }
 .model-option input { accent-color: var(--primary); }
@@ -241,6 +240,35 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .upload-card-heading h2 { margin-bottom: 0; }
 .theme-toggle { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: var(--surface); }
 .theme-toggle:hover { color: var(--primary); background: var(--surface-soft); }
+.about-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: var(--surface); font-size: 12px; font-weight: 700; transition: color .15s ease, background-color .15s ease, border-color .15s ease; }
+.about-toggle:hover { color: var(--primary); background: var(--surface-soft); border-color: var(--primary); }
+.page-container-suspended { display: none; }
+.about-overlay { position: fixed; inset: 0; z-index: 50; overflow-y: auto; padding: 0 28px; color: var(--ink); background: var(--surface-soft); }
+.about-content { width: min(100%, 1060px); margin: 0 auto; padding: clamp(28px, 6vh, 60px) 0 48px; }
+.about-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
+.about-heading h1 { margin: 0 0 7px; color: var(--ink); font: 800 clamp(25px, 3vw, 32px) Manrope, 'DM Sans', sans-serif; letter-spacing: -.8px; }
+.about-heading p { margin: 0; color: var(--muted); font-size: 14px; }
+.about-back { flex-shrink: 0; }
+.about-flow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 22px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); }
+.about-flow-part { display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0; gap: 12px; }
+.about-flow-part:last-child { flex: 0 1 auto; }
+.about-flow-step { display: flex; align-items: center; flex-direction: column; gap: 8px; min-width: 85px; color: var(--primary); text-align: center; }
+.about-flow-step strong { color: var(--ink); font-size: 11px; }
+.about-flow-arrow { flex: 0 0 auto; color: var(--muted); }
+.about-steps { display: grid; gap: 13px; margin: 24px 0 18px; padding-left: 26px; color: var(--muted); font-size: 14px; line-height: 1.65; }
+.about-steps li { padding-left: 3px; }
+.about-steps strong { color: var(--ink); }
+.about-note { display: flex; align-items: center; gap: 8px; margin: 20px 0 0; padding: 13px 15px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); background: var(--surface); font-size: 12px; }
+.about-note svg { flex: 0 0 auto; color: var(--primary); }
+@media (max-width: 640px) {
+  .about-overlay { padding: 0 16px; }
+  .about-heading { flex-direction: column; }
+  .about-flow { align-items: stretch; flex-direction: column; gap: 0; padding: 8px 16px; }
+  .about-flow-part, .about-flow-part:last-child { flex: initial; justify-content: center; }
+  .about-flow-step { flex-direction: row; justify-content: flex-start; width: 100%; min-height: 45px; text-align: left; }
+  .about-flow-step strong { font-size: 12px; }
+  .about-flow-arrow { transform: rotate(90deg); margin: 0 14px; }
+}
 
 html[data-theme="dark"] { color-scheme: dark; --ink: #e7eaf3; --muted: #aab3c6; --line: #313b50; --surface: #1b2433; --surface-soft: #222d40; --primary: #7889ff; --primary-dark: #6879ed; background: #111827; }
 html[data-theme="dark"] body { color: var(--ink); background: radial-gradient(ellipse at 20% -15%, #242b48 0, transparent 42%), #111827; }
@@ -305,7 +333,6 @@ html[data-theme="dark"] .alert-error { color: #ffb5bf; background: #3a2029; bord
 html[data-theme="dark"] .quiet-note { color: #c4ccff; background: #252f4a; }
 html[data-theme="dark"] .recommendation-chip { color: var(--ink); }
 html[data-theme="dark"] .theme-toggle { color: var(--ink); background: var(--surface); border-color: var(--line); }
-html[data-theme="dark"] .prediction-explainer,
 html[data-theme="dark"] .page-header p,
 html[data-theme="dark"] .panel-heading p { color: var(--muted); }
 
