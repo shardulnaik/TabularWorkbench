@@ -1,11 +1,10 @@
-import { ArrowLeft, ArrowRight, BarChart3, CheckCheck, Download, FileSpreadsheet, Target, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BarChart3, CheckCheck, Download, FileSpreadsheet, Target } from 'lucide-react';
 
 const stages = [
     { label: 'Your file', icon: FileSpreadsheet },
     { label: 'Data profile', icon: BarChart3 },
     { label: 'Choose target', icon: Target },
-    { label: 'Compare models', icon: Trophy },
-    { label: 'Results', icon: CheckCheck },
+    { label: 'Predict or chart', icon: CheckCheck },
 ];
 
 export function AboutPanel({ onBack }) {
@@ -24,11 +23,10 @@ export function AboutPanel({ onBack }) {
         <ol className="about-steps">
           <li><strong>Upload a CSV or Excel file.</strong> The original upload is kept available in your results.</li>
           <li><strong>Review the data profile.</strong> See the row, column, and missing-cell summary after safe text cleanup.</li>
-          <li><strong>Choose an ML workflow.</strong> Classification uses a categorical target; regression uses a numerical target.</li>
-          <li><strong>Compare models.</strong> Review cross-validation scores, then select a model to evaluate on separate held-out rows.</li>
-          <li><strong>Use your results.</strong> Download the analysis as a ZIP, or open charts to explore the data and download a chart image.</li>
+          <li><strong>Choose a target column.</strong> The app determines whether to use classification or regression.</li>
+          <li><strong>Predict or chart.</strong> Enter one record in the generated form, or explore and download a chart from the same dataset.</li>
         </ol>
-        <p className="about-note"><Download size={15}/> Charts describe the dataset and are available regardless of which model you select.</p>
+        <p className="about-note"><Download size={15}/> Charts describe the dataset and are available alongside predictions.</p>
       </section>
     </div>;
 }

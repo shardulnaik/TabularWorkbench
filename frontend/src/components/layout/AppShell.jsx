@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Info, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Info, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AboutPanel } from '../../pages/AboutPanel';
@@ -20,24 +20,14 @@ export function AppShell() {
     ] : [];
     const currentStage = stages.indexOf(location.pathname);
     const isChartsPage = location.pathname === `/datasets/${datasetId}/explore`;
-    const isPredictPage = location.pathname === `/datasets/${datasetId}/predict`;
     const isChartOutput = isChartsPage && location.state?.chartView === true;
     const canGoBack = isChartsPage ? Boolean(location.state?.returnTo) : currentStage >= 0;
     const showBack = isChartsPage ? !isChartOutput : currentStage >= 0;
-    const showForward = isPredictPage && Boolean(location.state?.comparisonResult) && !location.state?.comparisonView;
     const goBack = () => {
         if (isChartsPage) {
             navigate(location.state.returnTo, { replace: true, state: location.state?.returnState });
         }
-        else if (isPredictPage && location.state?.comparisonView && location.state?.comparisonResult) {
-            navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: false } });
-        }
-        else if (currentStage === 2 && location.state?.comparisonResult) {
-            navigate(stages[1], { state: { ...location.state, comparisonView: true } });
-        }
-        else {
-            navigate(currentStage === 0 ? '/' : stages[currentStage - 1]);
-        }
+        else navigate(currentStage === 0 ? '/' : stages[currentStage - 1]);
     };
     return (<div className="app-root">
       <header className="topbar">
@@ -52,9 +42,8 @@ export function AppShell() {
         </div>
       </header>
 
-      {!showAbout && datasetId && (currentStage >= 0 || isChartsPage) && (showBack || showForward) && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
+      {!showAbout && datasetId && (currentStage >= 0 || isChartsPage) && showBack && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
           {showBack && <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={goBack}><ArrowLeft size={19}/></button>}
-          {showForward && <button type="button" className="history-arrow" aria-label="Open model selection" onClick={() => navigate(location.pathname, { replace: true, state: { ...location.state, comparisonView: true } })}><ArrowRight size={19}/></button>}
         </nav>)}
 
         <main className={`page-container${showAbout ? ' page-container-suspended' : ''}`} aria-hidden={showAbout} inert={showAbout}><Outlet /></main>

@@ -347,6 +347,16 @@ html[data-theme="dark"] .panel-heading p { color: var(--muted); }
 .feature-checkboxes label { display: inline-flex; align-items: center; gap: 6px; }
 .metric-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; text-transform: capitalize; }
 .metric-card strong { font-size: 20px; }
+.prediction-form { display: grid; gap: 14px; }
+.prediction-input-field { margin: 0; }
+.prediction-result { display: grid; gap: 5px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.prediction-result > span { color: var(--muted); }
+.prediction-result > strong { font-size: 28px; color: var(--accent); }
+.prediction-result p, .prediction-result small { margin: 0; }
+.inline-chart-panel > summary { cursor: pointer; font-weight: 650; }
+.inline-chart-panel[open] > summary { margin-bottom: 12px; }
+.inline-chart-panel .chart-builder { padding: 0; border: 0; box-shadow: none; }
+.chart-download-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .chart-focus { width: 100%; max-width: 1080px; margin: 0 auto; }
 .chart-back { align-self: flex-start; }
 .chart-focus .chart-result { width: 100%; }

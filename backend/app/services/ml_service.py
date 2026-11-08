@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from uuid import uuid4
 
@@ -10,179 +11,227 @@ from sklearn.model_selection import train_test_split
 from sqlalchemy.orm import Session
 
 from app.db.models import DatasetSession, ModelRun
-from app.ml.artifacts import load_split_positions, save_split_manifest
+from app.ml.artifacts import save_split_manifest
 from app.ml.evaluation import evaluate_classifier, evaluate_regressor
-from app.ml.model_comparison import MODEL_LABELS, build_model, compare_models
+from app.ml.model_comparison import MODEL_LABELS, build_model
 from app.ml.preprocessing import prepare_ml_frame
-from app.schemas.ml import ModelCompareRequest, ModelEvaluateRequest
+from app.schemas.ml import ModelTrainRequest, SinglePredictionRequest
 from app.services.dataset_service import load_session_dataframe
 from app.storage.local_artifacts import artifact_store
+from app.utils.data_types import detect_target_task, is_id_like
 from app.utils.serialization import json_safe
-from app.utils.data_types import is_id_like, is_measure_like
 
 
-def compare_dataset_models(db: Session, dataset: DatasetSession, request: ModelCompareRequest) -> dict:
-    df = load_session_dataframe(dataset)
+def train_for_target(db: Session, dataset: DatasetSession, request: ModelTrainRequest) -> dict:
+    df = load_session_dataframe(dataset).reset_index(drop=True)
     if request.target_column not in df.columns:
-        raise HTTPException(status_code=422, detail="Select a target column that exists in the dataset.")
-    target_series = df[request.target_column]
-    if target_series.isna().mean() > .4:
-        raise HTTPException(status_code=422, detail="This target has more than 40% missing values. Choose another target or clean the dataset first.")
-    if target_series.nunique(dropna=True) <= 1:
-        raise HTTPException(status_code=422, detail="A target must contain at least two distinct non-missing values.")
-    if (is_id_like(target_series, request.target_column) and not is_measure_like(target_series, request.target_column)):
-        raise HTTPException(status_code=422, detail="Identifier-like columns cannot be used as targets.")
-    if not pd.api.types.is_numeric_dtype(target_series) and (target_series.nunique(dropna=True) > 50 or (len(df) >= 20 and target_series.nunique(dropna=True) / max(int(target_series.notna().sum()), 1) > .8)):
-        raise HTTPException(status_code=422, detail="This target has excessive cardinality and is likely an identifier. Choose another target.")
-    allowed_metrics = {"accuracy", "f1_weighted", "recall_weighted", "precision_weighted"} if request.task_type == "classification" else {"mae", "mse", "rmse", "r2"}
-    if request.scoring_metric not in allowed_metrics:
-        raise HTTPException(status_code=422, detail=f"Choose a {request.task_type} scoring metric.")
-    X, y, valid_positions, excluded = _prepare_or_422(df, request.target_column, request.task_type)
-    # Numeric targets with many unique values are likely regression targets, not class labels.
-    raw_target = df[request.target_column].dropna()
-    is_continuous = pd.api.types.is_numeric_dtype(raw_target) and raw_target.nunique() > 20 and raw_target.nunique() / max(len(raw_target), 1) > 0.1
-    if request.task_type == "classification" and is_continuous:
-        raise HTTPException(status_code=422, detail="This is a continuous numeric target. Select Regression or choose a categorical target.")
-    if request.task_type == "regression" and not is_continuous:
-        raise HTTPException(status_code=422, detail="Regression requires a continuous numeric target column.")
-    if y.nunique() < 2:
-        raise HTTPException(status_code=422, detail="The target must contain at least two distinct classes.")
-    if len(X) < 12:
-        raise HTTPException(status_code=422, detail="At least 12 labelled rows are required for a basic training and evaluation split.")
-    counts = y.value_counts()
-    if request.task_type == "classification" and int(counts.min()) < 2:
-        raise HTTPException(status_code=422, detail="Each target class needs at least two labelled examples. Add more examples or choose another target.")
-
-    local_positions = np.arange(len(y), dtype=np.int64)
+        raise HTTPException(status_code=422, detail="Select a target column that exists in this CSV.")
+    target = df[request.target_column]
+    if target.isna().mean() > 0.4:
+        raise HTTPException(status_code=422, detail="This target has more than 40% missing values. Choose another target or clean it first.")
+    if is_id_like(target, request.target_column):
+        raise HTTPException(status_code=422, detail="This column looks like an identifier and is not a suitable prediction target.")
     try:
-        train_local, test_local = train_test_split(
-            local_positions, test_size=request.test_size, random_state=request.random_state, stratify=y.to_numpy() if request.task_type == "classification" else None
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=f"Could not create a stratified holdout split: {str(exc)}") from exc
-    train_positions = [valid_positions[int(i)] for i in train_local]
-    test_positions = [valid_positions[int(i)] for i in test_local]
-    X_train = X.iloc[train_local].reset_index(drop=True)
-    y_train = y.iloc[train_local].reset_index(drop=True)
-    try:
-        results = compare_models(X_train, y_train, random_state=request.random_state, task_type=request.task_type)
+        task_type, numeric_target, task_reason = detect_target_task(target)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    metric = request.scoring_metric
-    reverse = request.task_type == "classification" or metric == "r2"
-    results.sort(key=lambda row: (row["cv_metrics"].get(metric) is not None, (row["cv_metrics"].get(metric) or 0) if reverse else -(row["cv_metrics"].get(metric) or 0)), reverse=True)
-    recommendation = results[0]["model"]
+    if target.nunique(dropna=True) < 2:
+        raise HTTPException(status_code=422, detail="The target must contain at least two distinct values.")
+    if not numeric_target and target.nunique(dropna=True) > 50:
+        raise HTTPException(status_code=422, detail="This categorical target has too many distinct values and may be an identifier.")
+
+    X, y, valid_positions, excluded = _prepare_or_422(df, request.target_column, task_type)
+    if len(X) < 10:
+        raise HTTPException(status_code=422, detail="At least 10 labeled rows are required for a train/test evaluation and prediction model.")
+
+    class_counts: dict[str, int] = {}
+    stratify = None
+    if task_type == "classification":
+        counts = y.value_counts()
+        if len(counts) < 2:
+            raise HTTPException(status_code=422, detail="Classification needs at least two target classes.")
+        if int(counts.min()) < 2:
+            raise HTTPException(status_code=422, detail="Each class needs at least two labeled rows to train and evaluate fairly. Add examples or choose another target.")
+        class_counts = {str(label): int(count) for label, count in counts.items()}
+        stratify = y.to_numpy()
+        test_count = max(math.ceil(len(y) * 0.2), len(counts))
+        if len(y) - test_count < len(counts):
+            raise HTTPException(status_code=422, detail="There are too many classes for a reliable stratified train/test split.")
+    else:
+        test_count = max(2, math.ceil(len(y) * 0.2))
+
+    model_name = "random_forest_classifier" if task_type == "classification" else "random_forest_regressor"
     run_id = str(uuid4())
+    try:
+        train_local, test_local = train_test_split(
+            np.arange(len(y)), test_size=test_count, random_state=42, stratify=stratify
+        )
+        X_train, X_test = X.iloc[train_local].reset_index(drop=True), X.iloc[test_local].reset_index(drop=True)
+        y_train, y_test = y.iloc[train_local].reset_index(drop=True), y.iloc[test_local].reset_index(drop=True)
+        evaluation_pipeline = build_model(task_type, X_train)
+        test_positions = [valid_positions[int(index)] for index in test_local]
+        if task_type == "classification":
+            evaluation = evaluate_classifier(evaluation_pipeline, X_train, y_train, X_test, y_test)
+        else:
+            evaluation = evaluate_regressor(evaluation_pipeline, X_train, y_train, X_test, y_test)
+        # Keep a separate final pipeline trained on all labeled rows for interactive inference.
+        final_pipeline = build_model(task_type, X)
+        final_pipeline.fit(X, y)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail=f"This target/features combination could not be trained: {str(exc)[:220]}") from exc
+
+    feature_schema = _feature_schema(X)
+    warnings = []
+    if len(X) < 100:
+        warnings.append("This is a small dataset; evaluation scores may vary substantially with different rows.")
+    if task_type == "classification" and min(class_counts.values()) / len(y) < 0.05:
+        warnings.append("The target classes are imbalanced. Class weighting is enabled; review per-class results before relying on predictions.")
+    if all(value is None or (isinstance(value, float) and not np.isfinite(value)) for key, value in evaluation["metrics"].items() if key != "test_rows"):
+        raise HTTPException(status_code=422, detail="The held-out data did not support a meaningful evaluation metric. More labeled rows are needed.")
+
     manifest = {
         "run_id": run_id,
         "target_column": request.target_column,
-        "task_type": request.task_type,
+        "task_type": task_type,
+        "model": model_name,
         "feature_columns": list(X.columns),
         "excluded_columns": excluded,
-        "valid_target_rows": len(valid_positions),
-        "target_class_counts": {str(k): int(v) for k, v in counts.items()} if request.task_type == "classification" else {},
-        "train_size": int(len(train_positions)),
-        "test_size": int(len(test_positions)),
-        "random_state": request.random_state,
-        "test_fraction": request.test_size,
+        "train_size": int(len(train_local)),
+        "test_size": int(len(test_local)),
         "data_revision": dataset.data_revision,
-        "scoring_metric": metric,
-        "cv_folds": int(min(5, int(y_train.value_counts().min()))) if request.task_type == "classification" else int(min(5, max(2, len(y_train) // 2))),
     }
-    manifest_path, split_path = save_split_manifest(dataset.id, run_id, manifest, train_positions, test_positions)
+    _, split_path = save_split_manifest(
+        dataset.id, run_id, manifest,
+        [valid_positions[int(index)] for index in train_local],
+        test_positions,
+    )
+    artifact_path = artifact_store.save_model(dataset.id, f"trained_model_{run_id}.joblib", final_pipeline)
+    result = {
+        "model_run_id": run_id,
+        "target_column": request.target_column,
+        "task_type": task_type,
+        "task_reason": task_reason,
+        "model": model_name,
+        "model_label": MODEL_LABELS[model_name],
+        "metrics": evaluation["metrics"],
+        "feature_schema": feature_schema,
+        "excluded_columns": excluded,
+        "train_rows": int(len(train_local)),
+        "test_rows": int(len(test_local)),
+        "class_counts": class_counts,
+        "warnings": warnings,
+        "evaluation_note": "Metrics are calculated only on held-out labeled rows. They estimate performance and do not guarantee future predictions.",
+    }
     run = ModelRun(
-        id=run_id, dataset_id=dataset.id, data_revision=dataset.data_revision,
-        target_column=request.target_column, scoring_metric=metric,
-        comparison_json={"models": json_safe(results), "recommended_model": recommendation, "manifest": manifest},
-        split_manifest_path=str(split_path), completed=False,
+        id=run_id,
+        dataset_id=dataset.id,
+        data_revision=dataset.data_revision,
+        target_column=request.target_column,
+        scoring_metric="accuracy" if task_type == "classification" else "mae",
+        comparison_json={"manifest": manifest},
+        split_manifest_path=str(split_path),
+        selected_model=model_name,
+        evaluation_json=json_safe(result),
+        artifact_path=str(artifact_path),
+        predictions_path=None,
+        completed=True,
     )
     db.add(run)
     db.commit()
-    return {"model_run_id": run_id, "target_column": request.target_column, "task_type": request.task_type, "scoring_metric": metric, "models": results, "recommended_model": recommendation, "excluded_columns": excluded, "target_class_counts": manifest["target_class_counts"], "train_rows": manifest["train_size"], "test_rows": manifest["test_size"], "cv_folds": manifest["cv_folds"], "selection_note": "Candidate models are ranked on cross-validation within the training data. The held-out test set is used only after you select a model."}
+    return json_safe(result)
 
 
-def _prepare_or_422(df: pd.DataFrame, target: str, task_type: str = "classification"):
+def _prepare_or_422(df: pd.DataFrame, target: str, task_type: str):
     try:
         return prepare_ml_frame(df, target, task_type)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-def evaluate_selected_model(db: Session, dataset: DatasetSession, request: ModelEvaluateRequest) -> dict:
+def _feature_schema(X: pd.DataFrame) -> list[dict]:
+    schema = []
+    numeric_columns = set(X.select_dtypes(include=["number"]).columns)
+    for name in X.columns:
+        series = X[name]
+        if name in numeric_columns:
+            schema.append({"name": str(name), "kind": "numeric"})
+        else:
+            categories = series.dropna().astype(str).value_counts().head(100).index.tolist()
+            schema.append({"name": str(name), "kind": "categorical", "categories": categories})
+    return schema
+
+
+def predict_one(db: Session, dataset: DatasetSession, request: SinglePredictionRequest) -> dict:
     run = db.get(ModelRun, request.model_run_id)
     if run is None or run.dataset_id != dataset.id:
-        raise HTTPException(status_code=404, detail="Model comparison run was not found for this dataset.")
+        raise HTTPException(status_code=404, detail="Trained model was not found for this dataset.")
     if run.data_revision != dataset.data_revision:
-        raise HTTPException(status_code=409, detail="The dataset changed after this comparison. Run model comparison again before evaluating a model.")
-    manifest_path = Path(run.split_manifest_path).with_name(f"model_run_{run.id}_manifest.json")
-    try:
-        manifest = artifact_store.load_json(str(manifest_path))
-        train_positions, test_positions = load_split_positions(run.split_manifest_path)
-        df = load_session_dataframe(dataset).reset_index(drop=True)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=410, detail=str(exc)) from exc
-    task_type = manifest.get("task_type", "classification")
-    X, y, valid_positions, excluded = _prepare_or_422(df, run.target_column, task_type)
-    # The stored positions refer to original cleaned-data row numbers; filter target-missing rows identically.
-    train_position_set = set(train_positions)
-    test_position_set = set(test_positions)
-    train_mask = [i for i, p in enumerate(valid_positions) if p in train_position_set]
-    test_mask = [i for i, p in enumerate(valid_positions) if p in test_position_set]
-    if not train_mask or not test_mask:
-        raise HTTPException(status_code=409, detail="The stored split no longer matches this dataset. Run comparison again.")
-    X_train, y_train = X.iloc[train_mask].reset_index(drop=True), y.iloc[train_mask].reset_index(drop=True)
-    X_test, y_test = X.iloc[test_mask].reset_index(drop=True), y.iloc[test_mask].reset_index(drop=True)
-    selected = request.selected_model
-    regression_models = {"linear_regression", "random_forest_regressor"}
-    if (task_type == "regression" and selected not in regression_models) or (task_type == "classification" and selected in regression_models):
-        raise HTTPException(status_code=422, detail=f"Selected model is not available for {task_type}.")
-    try:
-        pipeline = build_model(selected, X_train)
-        eval_result = evaluate_regressor(pipeline, X_train, y_train, X_test, y_test, [valid_positions[i] for i in test_mask]) if task_type == "regression" else evaluate_classifier(pipeline, X_train, y_train, X_test, y_test, [valid_positions[i] for i in test_mask], df[run.target_column])
-    except (ValueError, TypeError) as exc:
-        raise HTTPException(status_code=422, detail=f"The selected model could not be evaluated: {str(exc)[:220]}") from exc
+        raise HTTPException(status_code=409, detail="The dataset changed after training. Train the model again before predicting.")
+    if not run.completed or not run.evaluation_json or not run.artifact_path:
+        raise HTTPException(status_code=409, detail="The model is not ready for predictions. Train it again.")
+    schema = run.evaluation_json.get("feature_schema", [])
+    expected = [feature["name"] for feature in schema]
+    provided = list(request.inputs.keys())
+    missing = [name for name in expected if name not in request.inputs]
+    extra = [name for name in provided if name not in expected]
+    if missing or extra:
+        details = []
+        if missing: details.append(f"missing inputs: {', '.join(missing)}")
+        if extra: details.append(f"unexpected inputs: {', '.join(extra)}")
+        raise HTTPException(status_code=422, detail="Input fields must match the trained feature form exactly (" + "; ".join(details) + ").")
 
-    artifact_path = artifact_store.save_model(dataset.id, f"selected_model_{run.id}_{selected}.joblib", pipeline)
-    pred_path = artifact_store.path(dataset.id, f"selected_model_{run.id}_predictions.csv")
-    pd.DataFrame(eval_result["predictions"]).to_csv(pred_path, index=False)
-    result_payload = {
+    row = {}
+    unseen_categories = []
+    for feature in schema:
+        name = feature["name"]
+        value = request.inputs[name]
+        if value is None or (isinstance(value, str) and not value.strip()):
+            raise HTTPException(status_code=422, detail=f"Enter a value for {name}.")
+        elif feature["kind"] == "numeric":
+            if isinstance(value, bool):
+                raise HTTPException(status_code=422, detail=f"{name} must be a number.")
+            try:
+                numeric_value = float(value)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(status_code=422, detail=f"{name} must be a number.") from exc
+            if not np.isfinite(numeric_value):
+                raise HTTPException(status_code=422, detail=f"{name} must be a finite number.")
+            row[name] = numeric_value
+        else:
+            if isinstance(value, (dict, list)):
+                raise HTTPException(status_code=422, detail=f"{name} must be a category value.")
+            category = str(value)
+            row[name] = category
+            if category not in feature.get("categories", []):
+                unseen_categories.append(name)
+
+    X_new = pd.DataFrame([row], columns=expected)
+    for feature in schema:
+        name = feature["name"]
+        if feature["kind"] == "numeric":
+            X_new[name] = pd.to_numeric(X_new[name], errors="coerce").astype(float)
+        else:
+            X_new[name] = X_new[name].astype(object)
+    try:
+        pipeline = artifact_store.load_model(run.artifact_path)
+        prediction = pipeline.predict(X_new)[0]
+        probabilities = None
+        if run.evaluation_json["task_type"] == "classification" and hasattr(pipeline, "predict_proba"):
+            probabilities = {str(label): float(score) for label, score in zip(pipeline.named_steps["model"].classes_, pipeline.predict_proba(X_new)[0])}
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=410, detail="The trained model artifact has expired. Train the model again.") from exc
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail=f"The prediction inputs could not be processed: {str(exc)[:200]}") from exc
+
+    result = {
         "model_run_id": run.id,
-        "selected_model": selected,
-        "selected_model_label": MODEL_LABELS[selected],
         "target_column": run.target_column,
-        "scoring_metric": run.scoring_metric,
-        "comparison": run.comparison_json.get("models", []),
-        "recommended_model": run.comparison_json.get("recommended_model"),
-        "metrics": eval_result["metrics"],
-        "task_type": task_type,
-        "confusion_matrix": eval_result.get("confusion_matrix"),
-        "classification_report": eval_result.get("classification_report"),
-        "feature_signals": eval_result["feature_signals"],
-        "prediction_preview": eval_result["predictions"][:100],
-        "prediction_count": len(eval_result["predictions"]),
-        "excluded_columns": manifest.get("excluded_columns", excluded),
-        "train_rows": manifest["train_size"],
-        "test_rows": manifest["test_size"],
-        "cv_folds": manifest["cv_folds"],
-        "data_revision": dataset.data_revision,
-        "model_configuration": {
-            "model": selected,
-            "parameters": pipeline.named_steps["model"].get_params(deep=False),
-            "preprocessing": "Numeric median imputation; scaling for Logistic Regression; categorical explicit-missing imputation and one-hot encoding. Preprocessing was fitted within the model pipeline.",
-            "random_state": manifest["random_state"],
-            "scoring_metric": run.scoring_metric,
-        },
-        "interpretation": eval_result["interpretation"],
-        "artifact_available": True,
+        "task_type": run.evaluation_json["task_type"],
+        "predicted_value": str(prediction) if run.evaluation_json["task_type"] == "classification" else float(prediction),
+        "probabilities": probabilities,
+        "warnings": [f"Unseen category in {name}; the model can process it, but has no learned category-specific pattern." for name in unseen_categories],
     }
-    run.selected_model = selected
-    run.evaluation_json = json_safe(result_payload)
-    run.artifact_path = str(artifact_path)
-    run.predictions_path = str(pred_path)
-    run.completed = True
-    db.add(run)
-    db.commit()
-    return json_safe(result_payload)
+    return json_safe(result)
 
 
 def get_model_run(db: Session, dataset_id: str, run_id: str) -> dict:
@@ -190,12 +239,7 @@ def get_model_run(db: Session, dataset_id: str, run_id: str) -> dict:
     if run is None or run.dataset_id != dataset_id:
         raise HTTPException(status_code=404, detail="Model run was not found.")
     if not run.completed or not run.evaluation_json:
-        return {"model_run_id": run.id, "completed": False, "comparison": run.comparison_json}
-    return {**run.evaluation_json, "completed": True}
-
-
-def get_comparison(db: Session, dataset_id: str, run_id: str) -> dict:
-    run = db.get(ModelRun, run_id)
-    if run is None or run.dataset_id != dataset_id:
-        raise HTTPException(status_code=404, detail="Model run was not found.")
-    return {"model_run_id": run.id, "models": run.comparison_json.get("models", []), "recommended_model": run.comparison_json.get("recommended_model"), "scoring_metric": run.scoring_metric, "target_column": run.target_column}
+        raise HTTPException(status_code=410, detail="The trained model details are not available.")
+    if run.data_revision != db.get(DatasetSession, dataset_id).data_revision:
+        raise HTTPException(status_code=409, detail="The dataset changed after this model was trained.")
+    return {**run.evaluation_json, "completed": True, "artifact_available": bool(run.artifact_path and Path(run.artifact_path).is_file())}

@@ -1,16 +1,15 @@
-# Tabular Data Analysis & ML Workbench
+﻿# Tabular Data Analysis & ML Workbench
 
-A guided, full-stack application for tabular data profiling, conservative cleaning, exploratory charts, classification and regression model comparison, held-out evaluation, and exportable results.
+A guided tabular analysis application that profiles and cleans one CSV/XLSX, trains a target-specific model, and predicts one new record at a time.
 
 ## Product workflow
 
 1. Upload a CSV or XLSX file (20 MB upload limit; up to 500,000 rows, 500 columns, and 2 million total cells).
 2. The app automatically applies available safe text cleanup (trimming whitespace and treating blank text as missing); the original upload remains unchanged.
-3. Review a short dataset summary, then proceed to model tuning. Charts are available from the results page.
-4. Create and download schema-aware histograms, bar charts, line charts, scatter plots, and correlation heatmaps.
-5. Choose whether to predict a category or number. Classification compares Logistic Regression and Random Forest Classifier; regression compares Linear Regression and Random Forest Regressor.
-6. Select a candidate and evaluate it on the held-out test partition.
-7. Download the current analysis as a ZIP, or expand the individual-download list for specific outputs.
+3. Review the data profile and continue to prediction.
+4. Select a target column. The app detects classification or regression, trains the matching Random Forest, and shows held-out evaluation metrics.
+5. Enter one record using the automatically generated feature form to predict one target value.
+6. Generate and download charts from the same page.
 
 Additional cleaning actions such as removing duplicates or imputing values are not applied automatically because they can change records or prediction labels.
 
@@ -21,7 +20,7 @@ Target eligibility is profiled from column type, cardinality, missingness, and i
 - Frontend: React, JavaScript, Vite, React Router, Recharts
 - Backend: FastAPI, Pydantic Settings, Pandas, NumPy
 - Database: SQLAlchemy with MySQL/PyMySQL for local development and PostgreSQL/psycopg for production; SQLite is used only by automated tests
-- ML: Scikit-learn Pipelines, ColumnTransformer, cross-validation, and held-out evaluation
+- ML: Scikit-learn Pipelines, ColumnTransformer, and held-out evaluation
 - Testing: pytest, Vitest, Testing Library
 - Packaging and hosting: Docker, Render, Vercel
 
@@ -126,8 +125,8 @@ Run `pip check` and `npm list --depth=0` as dependency sanity checks. A green de
 - `GET /api/v1/datasets/{dataset_id}/cleaning/log`
 - `GET /api/v1/datasets/{dataset_id}/eda/summary`
 - `POST /api/v1/datasets/{dataset_id}/charts/data`
-- `POST /api/v1/datasets/{dataset_id}/ml/compare`
-- `POST /api/v1/datasets/{dataset_id}/ml/evaluate`
+- `POST /api/v1/datasets/{dataset_id}/ml/train`
+- `POST /api/v1/datasets/{dataset_id}/ml/predict`
 - `GET /api/v1/datasets/{dataset_id}/ml/runs/{run_id}`
 - `GET /api/v1/datasets/{dataset_id}/exports/{export_type}` (includes `original-upload`, `cleaned-data`, `data-profile`, `cleaning-log`, chart/model artifacts, and `all.zip`)
 
@@ -138,8 +137,8 @@ Run `pip check` and `npm list --depth=0` as dependency sanity checks. A green de
 - Excel upload supports `.xlsx`; CSV and XLSX input is capped by size and row/column limits.
 - Exact duplicate rows may be legitimate repeated observations; removal is an explicit user choice.
 - General-purpose imputation is optional and can be inappropriate for a prediction target. The ML engine excludes rows with missing target labels and fits preprocessing only inside the model pipeline.
-- ID-like, constant and empty columns are excluded from ML features by default. Date/time columns are converted into basic calendar parts when recognized. Inspect the exclusions before interpreting the model.
-- Model comparison uses training-set cross-validation. The selected model's final report is computed on a held-out test split. Selecting by one metric does not make the model universally best.
+- ID-like, constant and empty columns are excluded from ML features by default. Date/time and unusable columns are excluded from the prediction form. Inspect the exclusions before interpreting the model.
+- The selected Random Forest is evaluated once on a held-out test split, then a separate copy is fit on all labeled rows for one-record predictions. Scores estimate performance; they do not guarantee future results.
 - Feature signals reflect the fitted model's use of features; they do not prove causality.
 - A downloaded `.joblib` pipeline should only be loaded from a source you trust. Never load arbitrary user-supplied serialized model files.
 - CSV exports prefix formula-like text cells to reduce spreadsheet formula-injection risk. That may alter the exported representation of those particular text cells; the in-app data is unchanged.

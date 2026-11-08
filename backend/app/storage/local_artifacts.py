@@ -71,6 +71,13 @@ class LocalArtifactStore:
         joblib.dump(model, path)
         return path
 
+    def load_model(self, path: str) -> Any:
+        artifact = Path(path).resolve()
+        if self.root not in artifact.parents or not artifact.is_file():
+            raise FileNotFoundError("The trained model artifact is no longer available.")
+        # Only load artifacts saved under the private, application-managed root.
+        return joblib.load(artifact)
+
     def remove_dataset(self, dataset_id: str) -> None:
         path = (self.root / dataset_id).resolve()
         if self.root in path.parents and path.exists():

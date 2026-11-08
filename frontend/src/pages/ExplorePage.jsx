@@ -90,6 +90,6 @@ export function ExplorePage() {
     <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generate} busy={busy}/>
     {error && <ErrorState message={error}/>}
     </>}
-    {showChart && chart && <><button className="button button-secondary chart-back" onClick={() => { setShowChart(false); navigate(location.pathname, { replace: true, state: { ...location.state, chartView: false } }); }}><ArrowLeft size={16}/> Back to chart options</button><ChartRenderer chart={chart}/></>}
+    {showChart && chart && <><button className="button button-secondary chart-back" onClick={() => { setShowChart(false); navigate(location.pathname, { replace: true, state: { ...location.state, chartView: false } }); }}><ArrowLeft size={16}/> Back to chart options</button><ChartRenderer chart={chart} datasetId={datasetId}/></>}
   </div>;
 }

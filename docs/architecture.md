@@ -24,20 +24,20 @@ Database selection is controlled only by `DATABASE_URL`: local development uses 
 - `original_upload_path`: byte-for-byte uploaded file retained in temporary storage.
 - `original_dataframe_path`: app-generated parsed dataframe used as the immutable initial representation.
 - `cleaned_dataframe_path`: app-generated working dataframe that changes only when an explicit cleaning action is applied.
-- `data_revision`: incremented after cleaning to prevent evaluating a model comparison against changed data.
+- `data_revision`: incremented after cleaning to prevent predicting with a model trained on an earlier dataset revision.
 - `cleaning_logs`: append-only records of applied cleaning actions.
 - `chart_runs`: chart configuration and chart-ready data tied to the data revision.
-- `model_runs`: chosen target, candidate comparison, saved train/test split, selected model, evaluation and artifact references.
+- `model_runs`: chosen target, detected task, saved train/test split, evaluation metrics and fitted pipeline reference.
 
-## Model evaluation integrity
+## Model training and prediction
 
 1. Missing target labels are excluded from the labelled modelling rows.
 2. Identifier-like, constant, high-cardinality, mostly-missing and all-missing columns are excluded from targets or features by default.
-3. Classification uses a stratified holdout; regression uses a random holdout. Their row positions are stored for the comparison run.
-4. Classification compares Logistic Regression and Random Forest Classifier. Regression compares Linear Regression and Random Forest Regressor.
-5. The UI ranks models using a user-selected CV metric.
-6. The user-selected model is fitted on the same training partition and evaluated on the held-out test partition.
-7. Cleaning increments `data_revision`, so a stale comparison cannot be evaluated against changed data.
+3. Classification uses a stratified holdout; regression uses a random holdout.
+4. One Random Forest model matching the detected task is fitted on the training rows and scored on held-out rows.
+5. The same preprocessing and model pipeline is refit on all labeled rows and saved for interactive single-record prediction.
+6. Prediction inputs are checked against the saved feature schema; unseen categories are accepted by the encoder and reported to the user.
+7. Cleaning increments `data_revision`, so a model trained against older data cannot be used for prediction.
 
 
 ## Boundaries

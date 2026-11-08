@@ -1,73 +1,145 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, LoaderCircle, CheckCircle2, XCircle } from 'lucide-react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowRight, LoaderCircle } from 'lucide-react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
-import { compareModels, evaluateModel } from '../api/ml';
+import { createChart } from '../api/charts';
+import { getModelRun, predictRecord, trainModel } from '../api/ml';
 import { PageHeader } from '../components/layout/PageHeader';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
-import { ModelComparisonTable } from '../features/predict/ModelComparisonTable';
+import { ChartBuilder } from '../features/explore/ChartBuilder';
+import { ChartRenderer } from '../features/explore/ChartRenderer';
 
 export function PredictPage() {
   const { datasetId = '' } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const runId = searchParams.get('runId');
   const [profile, setProfile] = useState(null);
-  const [task, setTask] = useState('classification');
   const [targetColumn, setTargetColumn] = useState('');
-  const [comparison, setComparison] = useState(location.state?.comparisonResult || null);
-  const [selectedModel, setSelectedModel] = useState(location.state?.selectedModel || 'logistic_regression');
+  const [trained, setTrained] = useState(null);
+  const [inputs, setInputs] = useState({});
+  const [prediction, setPrediction] = useState(null);
+  const [chartType, setChartType] = useState('histogram');
+  const [xColumn, setXColumn] = useState('');
+  const [yColumn, setYColumn] = useState('');
+  const [aggregation, setAggregation] = useState('mean');
+  const [chart, setChart] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [showComparison, setShowComparison] = useState(Boolean(location.state?.comparisonView && location.state?.comparisonResult));
+  const [training, setTraining] = useState(false);
+  const [predicting, setPredicting] = useState(false);
+  const [charting, setCharting] = useState(false);
 
-  const load = () => {
-    setLoading(true);
-    setError('');
-    getProfile(datasetId).then(({ profile: p }) => {
-      setProfile(p);
-      const eligible = p.columns.filter(c => c.target_eligibility?.classification?.applicable || c.target_eligibility?.regression?.applicable);
-      const preferred = eligible.find(c => /attrition|churn|outcome|target|status|class/i.test(c.name)) || eligible[0];
-      setTargetColumn(current => current || location.state?.targetColumn || preferred?.name || '');
-    }).catch(e => setError(e instanceof Error ? e.message : 'Could not load dataset profile.')).finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [datasetId]);
-
-  const target = profile?.columns.find(c => c.name === targetColumn);
-  const eligibility = target?.target_eligibility?.[task];
-  const compare = async () => {
-    setBusy(true); setError(''); setComparison(null);
+  const load = async () => {
+    setLoading(true); setError('');
     try {
-      const result = await compareModels(datasetId, { target_column: targetColumn, task_type: task, scoring_metric: task === 'regression' ? 'mae' : 'accuracy' });
-      setComparison(result); setSelectedModel(result.recommended_model); setShowComparison(true);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Model comparison failed.'); }
-    finally { setBusy(false); }
+      const { profile: nextProfile } = await getProfile(datasetId);
+      setProfile(nextProfile);
+      const numeric = nextProfile.columns.find(c => c.kind === 'numeric' && !c.is_constant);
+      const any = nextProfile.columns.find(c => !c.is_constant);
+      setXColumn(numeric?.name || any?.name || '');
+      setYColumn(nextProfile.columns.find(c => c.kind === 'numeric' && c.name !== (numeric?.name || any?.name))?.name || '');
+      if (runId) {
+        const result = await getModelRun(datasetId, runId);
+        setTrained(result); setTargetColumn(result.target_column);
+        setInputs(Object.fromEntries((result.feature_schema || []).map(feature => [feature.name, ''])));
+      }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not load prediction options.');
+    } finally { setLoading(false); }
   };
-  const evaluate = async () => {
-    if (!comparison) return;
-    setBusy(true); setError('');
+  useEffect(() => {
+    // Training already produced this run in the current view; keep the entered
+    // form state instead of reloading it just because the URL was updated.
+    if (trained?.model_run_id === runId) return;
+    load();
+  }, [datasetId, runId, trained?.model_run_id]);
+
+  const eligibleTargets = profile?.columns.filter(column => column.target_eligibility?.classification?.applicable || column.target_eligibility?.regression?.applicable) || [];
+
+  const startTraining = async () => {
+    if (!targetColumn) return;
+    setTraining(true); setError(''); setPrediction(null);
     try {
-      const result = await evaluateModel(datasetId, comparison.model_run_id, selectedModel);
-      navigate(`/datasets/${datasetId}/results?runId=${result.model_run_id}`, { state: { evaluation: result, comparisonResult: comparison, targetColumn, selectedModel, comparisonView: true } });
-    } catch (e) { setError(e instanceof Error ? e.message : 'Model evaluation failed.'); }
-    finally { setBusy(false); }
+      const result = await trainModel(datasetId, targetColumn);
+      setTrained(result);
+      setInputs(Object.fromEntries(result.feature_schema.map(feature => [feature.name, ''])));
+      setSearchParams({ runId: result.model_run_id }, { replace: true });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Model training failed.');
+    } finally { setTraining(false); }
   };
 
-  if (loading) return <LoadingState label="Preparing model options…"/>;
+  const changeTarget = () => {
+    setTrained(null); setPrediction(null); setInputs({}); setError('');
+    setSearchParams({}, { replace: true });
+  };
+
+  const submitPrediction = async (event) => {
+    event.preventDefault();
+    if (!trained) return;
+    setPredicting(true); setError(''); setPrediction(null);
+    try { setPrediction(await predictRecord(datasetId, trained.model_run_id, inputs)); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Prediction failed.'); }
+    finally { setPredicting(false); }
+  };
+
+  const changeChartType = (nextType) => {
+    setChartType(nextType);
+    if (!profile) return;
+    const numeric = profile.columns.filter(c => c.kind === 'numeric' && !c.is_constant);
+    const categories = profile.columns.filter(c => !c.is_constant);
+    if (nextType === 'histogram') { setXColumn(numeric[0]?.name || ''); setYColumn(''); }
+    else if (nextType === 'scatter') { setXColumn(numeric[0]?.name || ''); setYColumn(numeric.find(c => c.name !== numeric[0]?.name)?.name || ''); }
+    else if (nextType === 'line') { const x = profile.columns.find(c => ['numeric','datetime'].includes(c.kind)); setXColumn(x?.name || ''); setYColumn(numeric.find(c => c.name !== x?.name)?.name || ''); }
+    else if (nextType === 'bar') { setXColumn(categories[0]?.name || ''); setYColumn(''); }
+  };
+
+  const generateChart = async () => {
+    setCharting(true); setError('');
+    try {
+      const result = await createChart(datasetId, { chart_type: chartType, x_column: chartType === 'correlation_heatmap' ? undefined : xColumn, y_column: yColumn || undefined, aggregation });
+      setChart(result);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Chart generation failed.'); }
+    finally { setCharting(false); }
+  };
+
+  if (loading) return <LoadingState label="Preparing prediction options…"/>;
   if (error && !profile) return <ErrorState message={error} onRetry={load}/>;
   if (!profile) return null;
+  const taskLabel = trained?.task_type === 'classification' ? 'Classification' : 'Regression';
+  const busy = training || predicting || charting;
+
   return <div className="page-stack predict-page">
-    {busy && <div className="processing-overlay" role="status"><div className="processing-card"><LoaderCircle className="processing-spinner" size={34}/><strong>{showComparison ? 'Evaluating selected model' : 'Comparing models'}</strong><span>{showComparison ? 'Calculating the held-out results…' : 'This can take a little while. Please keep this page open.'}</span></div></div>}
-    <PageHeader title={showComparison ? 'Compare models' : 'Model prediction'}/>
-    {!showComparison && <section className="panel prediction-setup">
-      <div className="field"><span>ML workflow</span><div className="target-compare-row">{['classification','regression'].map(t => <button key={t} className={`button ${task === t ? 'button-primary' : 'button-secondary'}`} onClick={() => { setTask(t); setComparison(null); setShowComparison(false); }}>{t[0].toUpperCase()+t.slice(1)}</button>)}</div></div>
-      <label className="field"><span>Prediction target</span><select value={targetColumn} onChange={e => { setTargetColumn(e.target.value); setComparison(null); }}><option value="">Choose an eligible column</option>{profile.columns.filter(c => c.target_eligibility?.[task]?.applicable).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</select></label>
-      <div className={`eligibility-status ${eligibility?.applicable ? 'eligible' : 'ineligible'}`} role="status">{eligibility?.applicable ? <CheckCircle2 size={18}/> : <XCircle size={18}/>}<span><strong>{task === 'classification' ? 'Classification' : 'Regression'} {eligibility?.applicable ? 'applicable' : 'not applicable'}</strong> — {eligibility?.reason || (targetColumn ? 'Choose an eligible target.' : 'Choose a target column to see which task applies.')}</span></div>
-      {target && <div className="eligibility-list">{['classification','regression'].map(t => { const info = target.target_eligibility[t]; return <span key={t}>{info.applicable ? '✓' : '×'} {t}: {info.applicable ? 'Applicable' : 'Unavailable'} — {info.reason}</span>; })}</div>}
-      <button className="button button-primary" onClick={compare} disabled={busy || !eligibility?.applicable}>Compare models <ArrowRight size={16}/></button>
-    </section>}
+    {busy && <div className="processing-overlay" role="status" aria-live="polite"><div className="processing-card"><LoaderCircle className="processing-spinner" size={34}/><strong>{training ? 'Training model' : predicting ? 'Generating prediction' : 'Generating chart'}</strong><span>Please keep this page open.</span></div></div>}
+    <PageHeader title="Predict"/>
+    {!trained ? <section className="panel prediction-setup">
+      <label className="field"><span>Target column</span><select value={targetColumn} onChange={event => setTargetColumn(event.target.value)}><option value="">Choose the value to predict</option>{eligibleTargets.map(column => <option key={column.name} value={column.name}>{column.name}</option>)}</select></label>
+      <button className="button button-primary" onClick={startTraining} disabled={training || !targetColumn}>Continue <ArrowRight size={16}/></button>
+      {!eligibleTargets.length && <p className="inline-error">No suitable target columns were found in this dataset.</p>}
+    </section> : <>
+      <section className="panel prediction-setup">
+        <div className="panel-heading"><div><h2>{trained.target_column}</h2><p>{taskLabel} · {trained.model_label}</p></div><button className="button button-secondary button-small" onClick={changeTarget}>Choose another target</button></div>
+        <div className="metrics-grid">{Object.entries(trained.metrics || {}).filter(([key]) => key !== 'test_rows').map(([key,value]) => <div className="metric-card" key={key}><span>{metricLabels[key] || key.replaceAll('_',' ')}</span><strong>{value == null ? '—' : Number(value).toFixed(3)}</strong></div>)}</div>
+        {trained.warnings?.map(warning => <p className="quiet-note" key={warning}>{warning}</p>)}
+        <p className="field-note">Evaluation uses {trained.test_rows} held-out labeled rows.</p>
+      </section>
+      <form className="panel prediction-form" onSubmit={submitPrediction}>
+        <div className="panel-heading"><div><h2>Enter one new record</h2><p>Fill in the input features used by the model.</p></div></div>
+        {trained.feature_schema.map((feature, index) => <label className="field prediction-input-field" key={feature.name}>
+          <span>{feature.name}</span>
+          {feature.kind === 'numeric' ? <input required type="number" step="any" value={inputs[feature.name] ?? ''} onChange={event => setInputs(current => ({ ...current, [feature.name]: event.target.value }))} placeholder="Enter a number"/> : <><input required type="text" list={`feature-options-${index}`} value={inputs[feature.name] ?? ''} onChange={event => setInputs(current => ({ ...current, [feature.name]: event.target.value }))} placeholder="Choose or enter a category"/><datalist id={`feature-options-${index}`}>{feature.categories.map(category => <option key={category} value={category}/>)}</datalist></>}
+        </label>)}
+        {!trained.feature_schema.length && <p className="inline-error">No suitable input features were found for this target.</p>}
+        <button className="button button-primary" type="submit" disabled={predicting || !trained.feature_schema.length}>Generate prediction</button>
+        {prediction && <div className="prediction-result" role="status"><span>Predicted {trained.target_column}</span><strong>{formatPrediction(prediction.predicted_value, trained.task_type)}</strong>{trained.task_type === 'classification' && prediction.probabilities && <p>Estimated probability: {((prediction.probabilities[prediction.predicted_value] || 0) * 100).toFixed(1)}%</p>}{prediction.warnings?.map(warning => <small key={warning}>{warning}</small>)}</div>}
+      </form>
+    </>}
     {error && <ErrorState message={error}/>}
-    {showComparison && comparison && <section className="panel comparison-view"><div className="panel-heading"><div><h2>{task === 'regression' ? 'Regression model scores' : 'Classification model scores'}</h2><p>Results for {targetColumn}</p></div></div><ModelComparisonTable models={comparison.models} metric={task === 'regression' ? 'mae' : 'accuracy'} selectedModel={selectedModel} recommendedModel={comparison.recommended_model} onSelect={setSelectedModel}/><div className="panel-footer comparison-actions"><button className="button button-primary" onClick={evaluate} disabled={busy}>Proceed with this model <ArrowRight size={16}/></button></div></section>}
+    <details className="panel inline-chart-panel"><summary>Generate chart</summary><ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeChartType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generateChart} busy={charting}/></details>
+    {chart && <ChartRenderer chart={chart} datasetId={datasetId}/>}
   </div>;
 }
+
+const metricLabels = { accuracy: 'Accuracy', balanced_accuracy: 'Balanced accuracy', precision_weighted: 'Precision', recall_weighted: 'Recall', f1_weighted: 'F1 score', mae: 'MAE', mse: 'MSE', rmse: 'RMSE', r2: 'R²' };
+function formatPrediction(value, task) { return task === 'classification' ? String(value) : Number(value).toLocaleString(undefined, { maximumFractionDigits: 3 }); }

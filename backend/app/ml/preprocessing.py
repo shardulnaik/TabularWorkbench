@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import re
-
+import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from app.utils.data_types import column_kind, is_id_like, is_measure_like
+from app.utils.data_types import column_kind, is_id_like
 
 
 def prepare_ml_frame(df: pd.DataFrame, target_column: str, task_type: str = "classification") -> tuple[pd.DataFrame, pd.Series, list[int], list[str]]:
@@ -35,22 +34,17 @@ def prepare_ml_frame(df: pd.DataFrame, target_column: str, task_type: str = "cla
         if series.isna().all() or series.nunique(dropna=True) <= 1:
             excluded.append(str(name))
             continue
-        if is_id_like(series, str(name)) and not is_measure_like(series, str(name)):
+        if is_id_like(series, str(name)):
             excluded.append(str(name))
             continue
         if not pd.api.types.is_numeric_dtype(series) and (series.nunique(dropna=True) > 50 or (len(series) >= 20 and series.nunique(dropna=True) / max(int(series.notna().sum()), 1) > 0.8)):
             excluded.append(str(name))
             continue
         if column_kind(series, str(name)) == "datetime":
-            dates = pd.to_datetime(series, errors="coerce")
-            if dates.notna().mean() >= 0.8:
-                safe_name = re.sub(r"[^A-Za-z0-9_]+", "_", str(name)).strip("_") or "date"
-                features[f"{safe_name}__year"] = dates.dt.year.astype("float64")
-                features[f"{safe_name}__month"] = dates.dt.month.astype("float64")
-                features[f"{safe_name}__day"] = dates.dt.day.astype("float64")
-                features[f"{safe_name}__dayofweek"] = dates.dt.dayofweek.astype("float64")
-                excluded.append(f"{name} (converted into date parts)")
-                continue
+            excluded.append(f"{name} (date/time features are not supported in the prediction form)")
+            continue
+        if not pd.api.types.is_numeric_dtype(series):
+            series = series.map(lambda value: str(value) if pd.notna(value) else np.nan).astype(object)
         features[str(name)] = series.reset_index(drop=True)
     if not features:
         raise ValueError("No usable feature columns remain after excluding the target, identifiers, and constant or empty columns.")

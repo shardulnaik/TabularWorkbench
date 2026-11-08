@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
-from app.utils.data_types import column_kind, is_id_like, is_measure_like
+from app.utils.data_types import column_kind, detect_target_task, is_id_like
 from app.utils.serialization import json_safe
 
 
@@ -27,22 +27,17 @@ def profile_dataframe(df: pd.DataFrame) -> dict:
         missing_pct = (missing / max(len(df), 1)) * 100
         unique_count = int(series.nunique(dropna=True))
         id_like = is_id_like(series, str(name))
-        if is_measure_like(series, str(name)):
-            id_like = False
+        try:
+            target_task, numeric_target, task_reason = detect_target_task(series)
+        except ValueError:
+            target_task, numeric_target, task_reason = "classification", False, "Target has no usable values."
         missing_too_high = missing_pct > 40
-        high_cardinality = kind != "numeric" and (unique_count > 50 or (len(df) >= 20 and unique_count / max(int(series.notna().sum()), 1) > 0.8))
+        high_cardinality = not numeric_target and unique_count > 50
         eligible_base = unique_count > 1 and not id_like and not high_cardinality and not missing_too_high and kind != "datetime"
-        if kind == "numeric":
-            is_continuous = unique_count > 20 and unique_count / max(int(series.notna().sum()), 1) > 0.1
-            task_eligibility = {
-                "classification": {"applicable": eligible_base and not is_continuous and unique_count <= 50, "reason": "Numeric target has a manageable number of classes." if not is_continuous and unique_count <= 50 else "Continuous numeric values are treated as a regression target." if is_continuous else "Numeric target has too many distinct classes."},
-                "regression": {"applicable": eligible_base and is_continuous, "reason": "Continuous numeric target." if is_continuous else "Choose a continuous numeric target for regression."},
-            }
-        else:
-            task_eligibility = {
-                "classification": {"applicable": eligible_base, "reason": "Categorical target can be classified." if eligible_base else "Target is constant, identifier-like, or has too many missing values."},
-                "regression": {"applicable": False, "reason": "Regression requires a continuous numeric target."},
-            }
+        task_eligibility = {
+            "classification": {"applicable": eligible_base and target_task == "classification", "reason": task_reason if target_task == "classification" else "Continuous numerical values are treated as a regression target."},
+            "regression": {"applicable": eligible_base and target_task == "regression", "reason": task_reason if target_task == "regression" else "Choose a continuous numerical target for regression."},
+        }
         if kind == "numeric":
             numeric_count += 1
             numeric_summary[str(name)] = json_safe({
@@ -76,6 +71,7 @@ def profile_dataframe(df: pd.DataFrame) -> dict:
             "is_high_cardinality": high_cardinality,
             "is_feature_eligible": unique_count > 1 and not id_like and not high_cardinality and not missing_too_high and kind != "datetime",
             "target_eligibility": task_eligibility,
+            "inferred_task": target_task,
             "target_exclusion_reason": "Constant column." if unique_count <= 1 else "Identifier-like column." if id_like else "Excessive unique values." if high_cardinality else "More than 40% missing values." if missing_too_high else None,
         })
         if len(df) and missing_pct >= 80:

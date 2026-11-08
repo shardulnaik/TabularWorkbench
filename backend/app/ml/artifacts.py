@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -17,6 +17,6 @@ def save_split_manifest(dataset_id: str, run_id: str, manifest: dict, train_posi
 def load_split_positions(path: str) -> tuple[list[int], list[int]]:
     artifact = Path(path).resolve()
     if artifact_store.root not in artifact.parents or not artifact.is_file():
-        raise FileNotFoundError("The model comparison split has expired. Run model comparison again.")
+        raise FileNotFoundError("The held-out evaluation split has expired. Train the model again.")
     with np.load(artifact, allow_pickle=False) as values:
         return values["train_positions"].astype(int).tolist(), values["test_positions"].astype(int).tolist()
