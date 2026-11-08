@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, confusion_matrix, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, confusion_matrix, f1_score, precision_score, recall_score, roc_auc_score, mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 
 from app.utils.serialization import json_safe
+
+
+def evaluate_regressor(pipeline, X_train, y_train, X_test, y_test, test_positions):
+    pipeline.fit(X_train, y_train)
+    predictions = pipeline.predict(X_test)
+    mse = float(mean_squared_error(y_test, predictions))
+    frame = pd.DataFrame({"row_number": [int(p) + 1 for p in test_positions], "actual": y_test.tolist(), "predicted": predictions.tolist(), "residual": (y_test.to_numpy() - predictions).tolist()})
+    return json_safe({"metrics": {"mae": float(mean_absolute_error(y_test, predictions)), "mse": mse, "rmse": float(np.sqrt(mse)), "r2": float(r2_score(y_test, predictions)), "test_rows": int(len(y_test))}, "predictions": frame.to_dict(orient="records"), "feature_signals": [], "interpretation": "Metrics describe the held-out test split and do not guarantee performance on future data."})
 
 
 def evaluate_classifier(pipeline: Pipeline, X_train: pd.DataFrame, y_train: pd.Series, X_test: pd.DataFrame, y_test: pd.Series, test_positions: list[int], original_target: pd.Series) -> dict:

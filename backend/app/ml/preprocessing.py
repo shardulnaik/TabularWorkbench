@@ -8,26 +8,37 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from app.utils.data_types import column_kind, is_id_like
+from app.utils.data_types import column_kind, is_id_like, is_measure_like
 
 
-def prepare_ml_frame(df: pd.DataFrame, target_column: str) -> tuple[pd.DataFrame, pd.Series, list[int], list[str]]:
+def prepare_ml_frame(df: pd.DataFrame, target_column: str, task_type: str = "classification") -> tuple[pd.DataFrame, pd.Series, list[int], list[str]]:
     """Create stable, leakage-conscious features and string classification labels."""
     if target_column not in df.columns:
         raise ValueError("Target column does not exist in the dataset")
     valid_positions = [int(i) for i, value in enumerate(df[target_column].tolist()) if pd.notna(value)]
     labelled = df.iloc[valid_positions].reset_index(drop=True)
-    y = labelled[target_column].astype(str)
+    y = pd.to_numeric(labelled[target_column], errors="coerce") if task_type == "regression" else labelled[target_column].astype(str)
+    if task_type == "regression":
+        keep = y.notna().to_numpy()
+        valid_positions = [position for position, is_valid in zip(valid_positions, keep) if is_valid]
+        labelled = labelled.loc[keep].reset_index(drop=True)
+        y = y.loc[keep].reset_index(drop=True)
     features: dict[str, pd.Series] = {}
     excluded: list[str] = []
     for name in df.columns:
         if name == target_column:
             continue
         series = labelled[name]
+        if series.isna().mean() > 0.4:
+            excluded.append(str(name))
+            continue
         if series.isna().all() or series.nunique(dropna=True) <= 1:
             excluded.append(str(name))
             continue
-        if is_id_like(series, str(name)):
+        if is_id_like(series, str(name)) and not is_measure_like(series, str(name)):
+            excluded.append(str(name))
+            continue
+        if not pd.api.types.is_numeric_dtype(series) and (series.nunique(dropna=True) > 50 or (len(series) >= 20 and series.nunique(dropna=True) / max(int(series.notna().sum()), 1) > 0.8)):
             excluded.append(str(name))
             continue
         if column_kind(series, str(name)) == "datetime":

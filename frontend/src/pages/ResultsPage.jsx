@@ -46,6 +46,8 @@ export function ResultsPage() {
       {!hasEvaluation && <p className="muted-copy">{chartRunId ? 'Your chart is ready to download.' : 'Your cleaned data and data profile are ready to download.'}</p>}
       {hasEvaluation && evaluation && <section className="panel result-model-panel">
         <h2>{evaluation.selected_model_label}</h2>
+        <p>{evaluation.task_type === 'regression' ? `Regression target: ${evaluation.target_column}` : `Classification target: ${evaluation.target_column}`}</p>
+        <div className="metrics-grid">{Object.entries(evaluation.metrics).filter(([key]) => key !== 'test_rows').map(([key,value]) => <div className="metric-card" key={key}><span>{key.replaceAll('_',' ')}</span><strong>{value == null ? '—' : Number(value).toFixed(4)}</strong></div>)}</div>
       </section>}
       <section className="panel result-download-panel">
         <div><h2>Download result</h2><p>Download your analysis as a ZIP file.</p></div>

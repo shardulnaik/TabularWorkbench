@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_dataset
 from app.db.models import DatasetSession
 from app.db.session import get_db
-from app.schemas.ml import ModelCompareRequest, ModelEvaluateRequest
-from app.services.ml_service import compare_dataset_models, evaluate_selected_model, get_model_run, get_comparison
+from app.schemas.ml import ModelCompareRequest, ModelEvaluateRequest, ClusterRequest
+from app.services.ml_service import compare_dataset_models, evaluate_selected_model, get_model_run, get_comparison, cluster_dataset
 
 router = APIRouter(prefix="/datasets/{dataset_id}/ml", tags=["machine learning"])
 
@@ -13,6 +13,11 @@ router = APIRouter(prefix="/datasets/{dataset_id}/ml", tags=["machine learning"]
 @router.post("/compare")
 def compare_models(request: ModelCompareRequest, dataset: DatasetSession = Depends(get_dataset), db: Session = Depends(get_db)) -> dict:
     return compare_dataset_models(db, dataset, request)
+
+
+@router.post("/cluster")
+def cluster_models(request: ClusterRequest, dataset: DatasetSession = Depends(get_dataset)) -> dict:
+    return cluster_dataset(dataset, request)
 
 
 @router.post("/evaluate")

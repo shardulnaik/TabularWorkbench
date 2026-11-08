@@ -1,9 +1,8 @@
 # Supported behavior and known limitations
 
-- Classification only; regression is deferred.
-- Candidate classifiers are Logistic Regression, Random Forest, K-Nearest Neighbors, Support Vector Machine (RBF), and AdaBoost. Unsupervised clustering is not compared because it does not predict a selected target column.
+- Classification compares Logistic Regression, Random Forest Classifier, and K-Nearest Neighbors. Regression currently provides Linear Regression. K-Means clustering is available without a target.
 - Cross-validation scores are not final test metrics. The UI reports the held-out score separately after model selection.
-- Datasets must contain enough labels per class for a stratified holdout and cross-validation. Very small or rare-class datasets return a validation error.
+- Classification datasets must contain enough labels per class for a stratified holdout and cross-validation. Regression and clustering also require enough usable rows for evaluation and scoring.
 - The parser allows CSV/XLSX up to the configured upload cap, 500 columns, and 500,000 rows; model training is more computationally expensive and should be limited by deployment resources.
 - Local artifact storage is temporary on ephemeral hosts. Configure durable storage before promising that sessions survive deploys or restarts.
 - Anonymous UUID session access is suitable for a portfolio demo, not a multi-tenant environment with private production data. Add authentication, ownership checks, rate limits, and stronger abuse protection before production use.

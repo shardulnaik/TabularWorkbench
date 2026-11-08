@@ -339,6 +339,14 @@ html[data-theme="dark"] .panel-heading p { color: var(--muted); }
 /* Keep generated outputs in a focused, single-purpose view. */
 .comparison-view { width: 100%; max-width: 980px; margin: 0 auto; }
 .comparison-actions { justify-content: space-between; }
+.eligibility-status { display: flex; gap: 9px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; }
+.eligibility-status.eligible { color: #17643b; background: #eaf7ef; }
+.eligibility-status.ineligible { color: #8b3a35; background: #fff0ee; }
+.eligibility-list, .feature-checkboxes { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+.eligibility-list { flex-direction: column; font-size: 13px; color: var(--muted); }
+.feature-checkboxes label { display: inline-flex; align-items: center; gap: 6px; }
+.metric-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; text-transform: capitalize; }
+.metric-card strong { font-size: 20px; }
 .chart-focus { width: 100%; max-width: 1080px; margin: 0 auto; }
 .chart-back { align-self: flex-start; }
 .chart-focus .chart-result { width: 100%; }

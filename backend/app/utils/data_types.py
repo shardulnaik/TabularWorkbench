@@ -29,3 +29,10 @@ def is_id_like(series: pd.Series, name: str) -> bool:
     unique_ratio = series.nunique(dropna=True) / max(int(series.notna().sum()), 1)
     name_suggests_id = bool(ID_NAME_PATTERN.search(name.replace(" ", "_")))
     return bool(name_suggests_id and unique_ratio >= 0.5) or bool(unique_ratio >= 0.98 and len(series) >= 20)
+
+
+def is_measure_like(series: pd.Series, name: str) -> bool:
+    """Avoid treating named numeric measures as identifiers just because they are mostly unique."""
+    if not is_numeric_dtype(series.dtype):
+        return False
+    return any(token in name.lower() for token in ("salary", "income", "amount", "price", "score", "mark", "weight", "height", "revenue", "cost", "quantity", "balance"))

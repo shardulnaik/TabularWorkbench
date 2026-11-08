@@ -20,9 +20,13 @@ A successful first-sheet/CSV response includes `session_id`, `profile`, and `cle
 
 ## Machine learning
 
-`POST /datasets/{id}/ml/compare` accepts `target_column`, `scoring_metric`, `test_size`, and `random_state`. It returns five candidate model scores, ranked using cross-validation on the training partition.
+`GET /datasets/{id}/profile` includes `target_eligibility` and feature suitability metadata per column. Continuous numeric targets are eligible for regression; categorical and low-cardinality targets are eligible for classification.
 
-`POST /datasets/{id}/ml/evaluate` accepts `model_run_id` and `selected_model`. The selected pipeline is evaluated on the preserved holdout partition; metrics, confusion matrix, classification report, feature signals, configuration, and artifact availability are returned.
+`POST /datasets/{id}/ml/compare` accepts `target_column`, `task_type` (`classification` or `regression`), `scoring_metric`, `test_size`, and `random_state`. It returns task-specific candidate model scores, ranked using cross-validation on the training partition.
+
+`POST /datasets/{id}/ml/evaluate` accepts `model_run_id` and `selected_model`. The selected pipeline is evaluated on the preserved holdout partition with classification or regression metrics.
+
+`POST /datasets/{id}/ml/cluster` accepts `feature_columns`, `n_clusters` (2–20), and optional `random_state`. K-Means returns silhouette, Davies-Bouldin, and Calinski-Harabasz scores with per-row cluster assignments.
 
 ## Exports
 

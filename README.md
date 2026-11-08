@@ -1,6 +1,6 @@
 # Tabular Data Analysis & ML Workbench
 
-A guided, full-stack application for tabular data profiling, conservative cleaning, exploratory charts, classification model comparison, held-out evaluation, and exportable results.
+A guided, full-stack application for tabular data profiling, conservative cleaning, exploratory charts, classification and regression model comparison, target-free clustering, held-out evaluation, and exportable results.
 
 ## Product workflow
 
@@ -8,13 +8,13 @@ A guided, full-stack application for tabular data profiling, conservative cleani
 2. The app automatically applies available safe text cleanup (trimming whitespace and treating blank text as missing); the original upload remains unchanged.
 3. Review a short dataset summary, then proceed to model tuning. Charts are available from the results page.
 4. Create and download schema-aware histograms, bar charts, line charts, scatter plots, and correlation heatmaps.
-5. Compare Logistic Regression, Random Forest, K-Nearest Neighbors, Support Vector Machine (RBF), and AdaBoost using cross-validation on the training partition. Accuracy is the default ranking metric.
+5. Choose Classification, Regression, or Clustering. Classification compares Logistic Regression, Random Forest Classifier, and K-Nearest Neighbors. Regression uses Linear Regression with MAE, MSE, RMSE, and R². K-Means clustering uses selected feature columns and a configurable cluster count without a target.
 6. Select a candidate and evaluate it on the held-out test partition.
 7. Download the current analysis as a ZIP, or expand the individual-download list for specific outputs.
 
 Additional cleaning actions such as removing duplicates or imputing values are not applied automatically because they can change records or prediction labels.
 
-The initial ML release supports classification. Regression, persisted project history, scoring brand-new datasets with a trained pipeline, and PDF reports are outside this version's scope.
+Target eligibility is profiled from column type, cardinality, missingness, and identifier patterns. Persisted project history, scoring brand-new datasets with a trained pipeline, and PDF reports are outside this version's scope.
 
 ## Technology
 
