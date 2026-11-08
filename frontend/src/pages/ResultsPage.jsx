@@ -59,5 +59,3 @@ export function ResultsPage() {
       </section>
     </div>;
 }
-
-

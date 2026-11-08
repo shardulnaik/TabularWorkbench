@@ -1,6 +1,6 @@
 # Tabular Data Analysis & ML Workbench
 
-A guided, full-stack application for tabular data profiling, conservative cleaning, exploratory charts, classification and regression model comparison, target-free clustering, held-out evaluation, and exportable results.
+A guided, full-stack application for tabular data profiling, conservative cleaning, exploratory charts, classification and regression model comparison, held-out evaluation, and exportable results.
 
 ## Product workflow
 
@@ -8,7 +8,7 @@ A guided, full-stack application for tabular data profiling, conservative cleani
 2. The app automatically applies available safe text cleanup (trimming whitespace and treating blank text as missing); the original upload remains unchanged.
 3. Review a short dataset summary, then proceed to model tuning. Charts are available from the results page.
 4. Create and download schema-aware histograms, bar charts, line charts, scatter plots, and correlation heatmaps.
-5. Choose Classification, Regression, or Clustering. Classification compares Logistic Regression, Random Forest Classifier, and K-Nearest Neighbors. Regression uses Linear Regression with MAE, MSE, RMSE, and R². K-Means clustering uses selected feature columns and a configurable cluster count without a target.
+5. Choose whether to predict a category or number. Classification compares Logistic Regression and Random Forest Classifier; regression compares Linear Regression and Random Forest Regressor.
 6. Select a candidate and evaluate it on the held-out test partition.
 7. Download the current analysis as a ZIP, or expand the individual-download list for specific outputs.
 

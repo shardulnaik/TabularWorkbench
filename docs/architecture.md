@@ -34,12 +34,11 @@ Database selection is controlled only by `DATABASE_URL`: local development uses 
 1. Missing target labels are excluded from the labelled modelling rows.
 2. Identifier-like, constant, high-cardinality, mostly-missing and all-missing columns are excluded from targets or features by default.
 3. Classification uses a stratified holdout; regression uses a random holdout. Their row positions are stored for the comparison run.
-4. Classification compares Logistic Regression, Random Forest Classifier, and K-Nearest Neighbors. Regression uses Linear Regression.
+4. Classification compares Logistic Regression and Random Forest Classifier. Regression compares Linear Regression and Random Forest Regressor.
 5. The UI ranks models using a user-selected CV metric.
 6. The user-selected model is fitted on the same training partition and evaluated on the held-out test partition.
 7. Cleaning increments `data_revision`, so a stale comparison cannot be evaluated against changed data.
 
-K-Means clustering is an independent workflow. It uses selected features, fitted preprocessing, and internal clustering metrics without requiring a target or a train/test split.
 
 ## Boundaries
 

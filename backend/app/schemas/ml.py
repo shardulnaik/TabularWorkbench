@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 ScoringMetric = Literal["accuracy", "f1_weighted", "recall_weighted", "precision_weighted", "mae", "mse", "rmse", "r2"]
-ModelName = Literal["logistic_regression", "random_forest", "knn_classifier", "linear_regression"]
+ModelName = Literal["logistic_regression", "random_forest", "linear_regression", "random_forest_regressor"]
 
 
 class ModelCompareRequest(BaseModel):
@@ -17,9 +17,3 @@ class ModelCompareRequest(BaseModel):
 class ModelEvaluateRequest(BaseModel):
     model_run_id: str
     selected_model: ModelName
-
-
-class ClusterRequest(BaseModel):
-    feature_columns: list[str] = Field(min_length=2, max_length=100)
-    n_clusters: int = Field(default=3, ge=2, le=20)
-    random_state: int = Field(default=42, ge=0, le=2147483647)

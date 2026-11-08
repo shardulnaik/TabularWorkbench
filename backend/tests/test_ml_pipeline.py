@@ -11,8 +11,9 @@ def test_compare_and_evaluate_selected_model(client):
     compared = client.post(f"/api/v1/datasets/{dataset_id}/ml/compare", json={"target_column": "Attrition", "scoring_metric": "accuracy"})
     assert compared.status_code == 200, compared.text
     payload = compared.json()
-    assert len(payload["models"]) == 3
-    assert payload["recommended_model"] in {"logistic_regression", "random_forest", "knn_classifier"}
+    assert len(payload["models"]) == 2
+    assert {model["model"] for model in payload["models"]} == {"logistic_regression", "random_forest"}
+    assert payload["recommended_model"] in {"logistic_regression", "random_forest"}
     selected = payload["recommended_model"]
     evaluated = client.post(f"/api/v1/datasets/{dataset_id}/ml/evaluate", json={"model_run_id": payload["model_run_id"], "selected_model": selected})
     assert evaluated.status_code == 200, evaluated.text
@@ -24,7 +25,7 @@ def test_compare_and_evaluate_selected_model(client):
     assert download.status_code == 200
 
 
-def test_regression_and_target_free_kmeans(client):
+def test_regression_models_and_metrics(client):
     rows = ["RecordID,Salary,Age,Department,Constant"]
     depts = ["Sales", "Research", "Operations"]
     for i in range(1, 81):
@@ -38,10 +39,8 @@ def test_regression_and_target_free_kmeans(client):
     assert salary["target_eligibility"]["classification"]["applicable"] is False
     compare = client.post(f"/api/v1/datasets/{dataset_id}/ml/compare", json={"target_column": "Salary", "task_type": "regression", "scoring_metric": "mae"})
     assert compare.status_code == 200, compare.text
-    assert compare.json()["models"][0]["model"] == "linear_regression"
-    result = client.post(f"/api/v1/datasets/{dataset_id}/ml/evaluate", json={"model_run_id": compare.json()["model_run_id"], "selected_model": "linear_regression"})
-    assert result.status_code == 200, result.text
-    assert {"mae", "mse", "rmse", "r2"}.issubset(result.json()["metrics"])
-    clustered = client.post(f"/api/v1/datasets/{dataset_id}/ml/cluster", json={"feature_columns": ["Age", "Department"], "n_clusters": 3})
-    assert clustered.status_code == 200, clustered.text
-    assert {"silhouette_score", "davies_bouldin_index", "calinski_harabasz_score"}.issubset(clustered.json()["metrics"])
+    assert {model["model"] for model in compare.json()["models"]} == {"linear_regression", "random_forest_regressor"}
+    for model in ("linear_regression", "random_forest_regressor"):
+        result = client.post(f"/api/v1/datasets/{dataset_id}/ml/evaluate", json={"model_run_id": compare.json()["model_run_id"], "selected_model": model})
+        assert result.status_code == 200, result.text
+        assert {"mae", "mse", "rmse", "r2"}.issubset(result.json()["metrics"])

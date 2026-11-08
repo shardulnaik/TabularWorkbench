@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
-    description="Guided tabular data profiling, cleaning, visualization, classification, regression, and clustering workflows.",
+    description="Guided tabular data profiling, cleaning, visualization, classification, and regression workflows.",
     lifespan=lifespan,
 )
 

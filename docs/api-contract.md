@@ -26,7 +26,6 @@ A successful first-sheet/CSV response includes `session_id`, `profile`, and `cle
 
 `POST /datasets/{id}/ml/evaluate` accepts `model_run_id` and `selected_model`. The selected pipeline is evaluated on the preserved holdout partition with classification or regression metrics.
 
-`POST /datasets/{id}/ml/cluster` accepts `feature_columns`, `n_clusters` (2–20), and optional `random_state`. K-Means returns silhouette, Davies-Bouldin, and Calinski-Harabasz scores with per-row cluster assignments.
 
 ## Exports
 

@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, f1_score, precision_score, recall_score, mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import KFold, StratifiedKFold, cross_validate
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 
 from app.ml.preprocessing import build_preprocessor
@@ -14,23 +13,22 @@ from app.ml.preprocessing import build_preprocessor
 CLASSIFICATION_MODELS = {
     "logistic_regression": "Logistic Regression",
     "random_forest": "Random Forest Classifier",
-    "knn_classifier": "K-Nearest Neighbors",
 }
-REGRESSION_MODELS = {"linear_regression": "Linear Regression"}
+REGRESSION_MODELS = {"linear_regression": "Linear Regression", "random_forest_regressor": "Random Forest Regressor"}
 MODEL_LABELS = {**CLASSIFICATION_MODELS, **REGRESSION_MODELS}
 
 
 def build_model(model_name: str, X: pd.DataFrame) -> Pipeline:
-    scale = model_name in {"logistic_regression", "knn_classifier", "linear_regression"}
+    scale = model_name in {"logistic_regression", "linear_regression"}
     preprocessor = build_preprocessor(X, scale_numeric=scale)
     if model_name == "logistic_regression":
         estimator = LogisticRegression(max_iter=1500, class_weight="balanced", random_state=42)
     elif model_name == "random_forest":
         estimator = RandomForestClassifier(n_estimators=160, min_samples_leaf=2, class_weight="balanced_subsample", random_state=42, n_jobs=-1)
-    elif model_name == "knn_classifier":
-        estimator = KNeighborsClassifier(n_neighbors=3, weights="distance", n_jobs=-1)
     elif model_name == "linear_regression":
         estimator = LinearRegression()
+    elif model_name == "random_forest_regressor":
+        estimator = RandomForestRegressor(n_estimators=200, min_samples_leaf=2, random_state=42, n_jobs=-1)
     else:
         raise ValueError("Unsupported model selection")
     return Pipeline([("preprocessor", preprocessor), ("model", estimator)])

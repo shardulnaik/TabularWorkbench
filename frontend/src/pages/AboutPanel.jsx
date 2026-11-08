@@ -24,7 +24,7 @@ export function AboutPanel({ onBack }) {
         <ol className="about-steps">
           <li><strong>Upload a CSV or Excel file.</strong> The original upload is kept available in your results.</li>
           <li><strong>Review the data profile.</strong> See the row, column, and missing-cell summary after safe text cleanup.</li>
-          <li><strong>Choose an ML workflow.</strong> Classification and regression use an eligible target column; K-Means clustering works from selected features without a target.</li>
+          <li><strong>Choose an ML workflow.</strong> Classification uses a categorical target; regression uses a numerical target.</li>
           <li><strong>Compare models.</strong> Review cross-validation scores, then select a model to evaluate on separate held-out rows.</li>
           <li><strong>Use your results.</strong> Download the analysis as a ZIP, or open charts to explore the data and download a chart image.</li>
         </ol>

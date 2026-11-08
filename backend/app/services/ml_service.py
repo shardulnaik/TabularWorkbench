@@ -14,15 +14,11 @@ from app.ml.artifacts import load_split_positions, save_split_manifest
 from app.ml.evaluation import evaluate_classifier, evaluate_regressor
 from app.ml.model_comparison import MODEL_LABELS, build_model, compare_models
 from app.ml.preprocessing import prepare_ml_frame
-from app.schemas.ml import ModelCompareRequest, ModelEvaluateRequest, ClusterRequest
+from app.schemas.ml import ModelCompareRequest, ModelEvaluateRequest
 from app.services.dataset_service import load_session_dataframe
 from app.storage.local_artifacts import artifact_store
 from app.utils.serialization import json_safe
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
-from app.ml.preprocessing import build_preprocessor
-from sklearn.pipeline import Pipeline
-from app.utils.data_types import column_kind, is_id_like, is_measure_like
+from app.utils.data_types import is_id_like, is_measure_like
 
 
 def compare_dataset_models(db: Session, dataset: DatasetSession, request: ModelCompareRequest) -> dict:
@@ -137,7 +133,8 @@ def evaluate_selected_model(db: Session, dataset: DatasetSession, request: Model
     X_train, y_train = X.iloc[train_mask].reset_index(drop=True), y.iloc[train_mask].reset_index(drop=True)
     X_test, y_test = X.iloc[test_mask].reset_index(drop=True), y.iloc[test_mask].reset_index(drop=True)
     selected = request.selected_model
-    if (task_type == "regression" and selected != "linear_regression") or (task_type == "classification" and selected == "linear_regression"):
+    regression_models = {"linear_regression", "random_forest_regressor"}
+    if (task_type == "regression" and selected not in regression_models) or (task_type == "classification" and selected in regression_models):
         raise HTTPException(status_code=422, detail=f"Selected model is not available for {task_type}.")
     try:
         pipeline = build_model(selected, X_train)
@@ -202,31 +199,3 @@ def get_comparison(db: Session, dataset_id: str, run_id: str) -> dict:
     if run is None or run.dataset_id != dataset_id:
         raise HTTPException(status_code=404, detail="Model run was not found.")
     return {"model_run_id": run.id, "models": run.comparison_json.get("models", []), "recommended_model": run.comparison_json.get("recommended_model"), "scoring_metric": run.scoring_metric, "target_column": run.target_column}
-
-
-def cluster_dataset(dataset: DatasetSession, request: ClusterRequest) -> dict:
-    df = load_session_dataframe(dataset)
-    if len(set(request.feature_columns)) != len(request.feature_columns):
-        raise HTTPException(status_code=422, detail="Choose each clustering feature only once.")
-    if any(column not in df.columns for column in request.feature_columns):
-        raise HTTPException(status_code=422, detail="One or more selected clustering features do not exist.")
-    X = df[request.feature_columns].copy()
-    unsuitable = [c for c in X if X[c].isna().mean() > .4 or X[c].nunique(dropna=True) <= 1 or (is_id_like(X[c], str(c)) and not is_measure_like(X[c], str(c))) or (not pd.api.types.is_numeric_dtype(X[c]) and (X[c].nunique(dropna=True) > 50 or (len(X) >= 20 and X[c].nunique(dropna=True) / max(int(X[c].notna().sum()), 1) > .8))) or column_kind(X[c], str(c)) == "datetime"]
-    if unsuitable:
-        raise HTTPException(status_code=422, detail=f"Remove unsuitable clustering features: {', '.join(unsuitable)}.")
-    valid = X.notna().any(axis=1)
-    valid_positions = np.flatnonzero(valid.to_numpy())
-    X = X.loc[valid].reset_index(drop=True)
-    if len(X) < max(10, request.n_clusters + 1):
-        raise HTTPException(status_code=422, detail="Clustering needs at least 10 usable rows and more rows than clusters.")
-    try:
-        pipeline = Pipeline([("preprocessor", build_preprocessor(X)), ("model", KMeans(n_clusters=request.n_clusters, n_init=10, random_state=request.random_state))])
-        labels = pipeline.fit_predict(X)
-        transformed = pipeline.named_steps["preprocessor"].transform(X)
-        if len(set(labels)) < 2 or len(set(labels)) >= len(labels):
-            raise ValueError("K-Means did not produce at least two non-empty clusters.")
-        metrics = {"silhouette_score": float(silhouette_score(transformed, labels)), "davies_bouldin_index": float(davies_bouldin_score(transformed, labels)), "calinski_harabasz_score": float(calinski_harabasz_score(transformed, labels))}
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=f"Clustering could not be completed: {exc}") from exc
-    cluster_ids, cluster_counts = np.unique(labels, return_counts=True)
-    return json_safe({"task_type": "clustering", "model": "kmeans", "model_label": "K-Means", "feature_columns": request.feature_columns, "n_clusters": request.n_clusters, "metrics": metrics, "cluster_counts": {str(int(k)): int(v) for k, v in zip(cluster_ids, cluster_counts)}, "assignments": [{"row_number": int(position) + 1, "cluster": int(label)} for position, label in zip(valid_positions, labels)], "excluded_rows": int((~valid).sum()), "preprocessing": "Median imputation and scaling for numeric fields; most frequent imputation and one-hot encoding for categorical fields."})
