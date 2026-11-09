@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getDataset, getProfile } from '../api/datasets';
 import { LoadingState } from '../components/common/LoadingState';
@@ -40,6 +40,7 @@ export function DatasetOverviewPage() {
         <h1>Data ready</h1>
         <p>{details.filename}</p>
       </div>
+      <button className="button button-secondary button-small ready-back" onClick={() => navigate('/')}><ArrowLeft size={15}/> Back to upload</button>
       <div className="compact-stats" aria-label="Dataset summary">
         <div><strong>{profile.row_count.toLocaleString()}</strong><span>rows</span></div>
         <div><strong>{profile.column_count.toLocaleString()}</strong><span>columns</span></div>

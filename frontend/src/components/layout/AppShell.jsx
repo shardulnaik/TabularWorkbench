@@ -19,6 +19,7 @@ export function AppShell() {
         `/datasets/${datasetId}/results`,
     ] : [];
     const currentStage = stages.indexOf(location.pathname);
+    const namedBackFlow = currentStage === 0 || currentStage === 1;
     const isChartsPage = location.pathname === `/datasets/${datasetId}/explore`;
     const isChartOutput = isChartsPage && location.state?.chartView === true;
     const canGoBack = isChartsPage ? Boolean(location.state?.returnTo) : currentStage >= 0;
@@ -42,7 +43,7 @@ export function AppShell() {
         </div>
       </header>
 
-      {!showAbout && datasetId && (currentStage >= 0 || isChartsPage) && showBack && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
+      {!showAbout && !namedBackFlow && datasetId && (currentStage >= 0 || isChartsPage) && showBack && (<nav className="workflow-nav workflow-arrows" aria-label="Page history">
           {showBack && <button type="button" className="history-arrow" aria-label="Previous page" disabled={!canGoBack} onClick={goBack}><ArrowLeft size={19}/></button>}
         </nav>)}
 

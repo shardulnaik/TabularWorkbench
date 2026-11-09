@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, BarChart3, ClipboardList, LoaderCircle } from 'lucide-react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getProfile } from '../api/datasets';
 import { createChart } from '../api/charts';
 import { getModelRun, predictRecord, trainModel } from '../api/ml';
@@ -12,6 +12,7 @@ import { ChartRenderer } from '../features/explore/ChartRenderer';
 
 export function PredictPage() {
   const { datasetId = '' } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const runId = searchParams.get('runId');
   const [profile, setProfile] = useState(null);
@@ -93,6 +94,14 @@ export function PredictPage() {
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Chart generation failed.'); }
     finally { setCharting(false); }
   };
+  const goBack = () => {
+    if (!trained) navigate(`/datasets/${datasetId}`);
+    else if (screen === 'evaluation') {
+      setTrained(null); setPrediction(null); setInputs({}); setError('');
+      setSearchParams({}, { replace: true });
+    } else setScreen('evaluation');
+  };
+  const backLabel = !trained ? 'Back to Data Ready' : screen === 'evaluation' ? 'Back to column selection' : 'Back to evaluation';
 
   if (loading) return <LoadingState label="Preparing prediction options..."/>;
   if (error && !profile) return <ErrorState message={error} onRetry={load}/>;
@@ -102,7 +111,7 @@ export function PredictPage() {
 
   return <div className={`page-stack predict-page predict-screen-${!trained ? 'setup' : screen}`}>
     {busy && <div className="processing-overlay" role="status" aria-live="polite"><div className="processing-card"><LoaderCircle className="processing-spinner" size={34}/><strong>{training ? 'Training model' : predicting ? 'Generating prediction' : 'Generating chart'}</strong><span>Please keep this page open.</span></div></div>}
-    <PageHeader title="Predict"/>
+    <div className="predict-page-heading"><PageHeader title="Predict"/><button className="button button-secondary button-small" onClick={goBack}><ArrowLeft size={15}/>{backLabel}</button></div>
     {!trained ? <section className="panel prediction-setup prediction-target-setup">
       <div><span className="predict-step-label">MODEL SETUP</span><h2>Choose what to predict</h2><p>Select a target column. We’ll train a model from the available features.</p></div>
       <label className="field"><span>Target column</span><select value={targetColumn} onChange={event => setTargetColumn(event.target.value)}><option value="">Choose a column</option>{eligibleTargets.map(column => <option key={column.name} value={column.name}>{column.name}</option>)}</select></label>
@@ -120,8 +129,8 @@ export function PredictPage() {
         </div>
       </section>}
       {screen === 'record' && <section className="prediction-work-view">
-        <div className="prediction-work-heading"><button className="button button-secondary button-small" onClick={() => setScreen('evaluation')}><ArrowLeft size={15}/> Back to evaluation</button><div><span className="predict-step-label">NEW PREDICTION</span><h2>Enter one new record</h2></div></div>
-        <div className="prediction-entry-layout">
+        <div className="prediction-work-heading"><span className="predict-step-label">NEW PREDICTION</span><h2>Enter one new record</h2></div>
+        <div className={`prediction-entry-layout${prediction ? ' has-result' : ''}`}>
           <form className="panel prediction-form" onSubmit={submitPrediction}>
             <div className="panel-heading"><div><h2>Record details</h2><p>Fill in the input features used by the model.</p></div></div>
             <div className="prediction-fields-scroll">{trained.feature_schema.map((feature, index) => <label className="field prediction-input-field" key={feature.name}>
@@ -131,11 +140,11 @@ export function PredictPage() {
             {!trained.feature_schema.length && <p className="inline-error">No suitable input features were found for this target.</p>}
             <button className="button button-primary prediction-submit" type="submit" disabled={predicting || !trained.feature_schema.length}>Generate prediction <ArrowRight size={16}/></button>
           </form>
-          <section className="panel prediction-result-pane" aria-live="polite"><span className="predict-step-label">PREDICTION RESULT</span>{prediction ? <div className="prediction-result" role="status"><span>Predicted {trained.target_column}</span><strong>{formatPrediction(prediction.predicted_value, trained.task_type)}</strong>{trained.task_type === 'classification' && prediction.probabilities && <p>Estimated probability: {((prediction.probabilities[prediction.predicted_value] || 0) * 100).toFixed(1)}%</p>}{prediction.warnings?.map(warning => <small key={warning}>{warning}</small>)}</div> : <p>Your result will appear here after you enter the record details.</p>}</section>
+          {prediction && <section className="panel prediction-result-pane" aria-live="polite"><span className="predict-step-label">PREDICTION RESULT</span><div className="prediction-result" role="status"><span>Predicted {trained.target_column}</span><strong>{formatPrediction(prediction.predicted_value, trained.task_type)}</strong>{trained.task_type === 'classification' && prediction.probabilities && <p>Estimated probability: {((prediction.probabilities[prediction.predicted_value] || 0) * 100).toFixed(1)}%</p>}{prediction.warnings?.map(warning => <small key={warning}>{warning}</small>)}</div></section>}
         </div>
       </section>}
       {screen === 'chart' && <section className="prediction-work-view prediction-chart-view">
-        <div className="prediction-work-heading"><button className="button button-secondary button-small" onClick={() => setScreen('evaluation')}><ArrowLeft size={15}/> Back to evaluation</button><div><span className="predict-step-label">DATA VISUALIZATION</span><h2>Generate a chart</h2></div></div>
+        <div className="prediction-work-heading"><span className="predict-step-label">DATA VISUALIZATION</span><h2>Generate a chart</h2></div>
         <div className={`prediction-chart-layout${chart ? ' has-chart' : ''}`}>
           <ChartBuilder columns={profile.columns} chartType={chartType} setChartType={changeChartType} xColumn={xColumn} setXColumn={setXColumn} yColumn={yColumn} setYColumn={setYColumn} aggregation={aggregation} setAggregation={setAggregation} onGenerate={generateChart} busy={charting}/>
           {chart && <ChartRenderer chart={chart} datasetId={datasetId}/>}
