@@ -38,7 +38,8 @@ export function AppShell() {
         <div className="topbar-actions">
           <button className="about-toggle" type="button" aria-label="About this website" aria-expanded={showAbout} onClick={() => setShowAbout((current) => !current)}><Info size={16}/> About</button>
           <button className="theme-toggle" type="button" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-            {theme === 'light' ? <Moon size={18}/> : <Sun size={18}/>}
+            {theme === 'light' ? <Moon size={17} aria-hidden="true"/> : <Sun size={17} aria-hidden="true"/>}
+            <span>Switch to {theme === 'light' ? 'dark' : 'light'} mode</span>
           </button>
         </div>
       </header>

@@ -238,8 +238,9 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .upload-page-simple .upload-dropzone { min-height: 250px; }
 .upload-page-simple .upload-card-footer { display: none; }
 .upload-card-heading h2 { margin-bottom: 0; }
-.theme-toggle { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: var(--surface); }
-.theme-toggle:hover { color: var(--primary); background: var(--surface-soft); }
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: var(--surface); font-size: 12px; font-weight: 700; white-space: nowrap; transition: color .15s ease, background-color .15s ease, border-color .15s ease; }
+.theme-toggle:hover { color: var(--primary); background: var(--surface-soft); border-color: var(--primary); }
+.theme-toggle:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent); outline-offset: 2px; }
 .about-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: var(--surface); font-size: 12px; font-weight: 700; transition: color .15s ease, background-color .15s ease, border-color .15s ease; }
 .about-toggle:hover { color: var(--primary); background: var(--surface-soft); border-color: var(--primary); }
 .page-container-suspended { display: none; }
